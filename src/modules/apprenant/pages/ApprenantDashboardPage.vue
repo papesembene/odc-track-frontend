@@ -4,7 +4,7 @@ import ApprenantDashboardContent from '@/modules/dashboard/components/ApprenantD
 </script>
 
 <template>
-  <ApprenantLayout title="Tableau de bord">
+  <ApprenantLayout title="Tableau de bord" active-menu="dashboard">
     <ApprenantDashboardContent />
   </ApprenantLayout>
 </template>

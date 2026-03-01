@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import StatCard from '@/modules/dashboard/components/StatCard.vue'
 
 const recentSituations = [
@@ -16,14 +17,13 @@ const recentSituations = [
 
 <template>
   <section class="space-y-6">
-
-    <!-- Greeting -->
     <div>
       <h2 class="text-2xl font-bold text-slate-900">Bonjour Amadou 👋</h2>
-      <p class="mt-1 text-sm text-slate-500">Bienvenue sur votre espace de suivi d'insertion professionnelle</p>
+      <p class="mt-1 text-sm text-slate-500">
+        Bienvenue sur votre espace de suivi d'insertion professionnelle
+      </p>
     </div>
 
-    <!-- Stat cards -->
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard label="Total situations" value="2" icon-bg="bg-orange-100">
         <template #icon>
@@ -63,13 +63,11 @@ const recentSituations = [
       </StatCard>
     </div>
 
-    <!-- Quick actions -->
     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <h3 class="text-base font-semibold text-slate-900">Actions rapides</h3>
       <div class="mt-4 grid gap-3 md:grid-cols-3">
-
-        <button class="flex items-center gap-4 rounded-xl border-2 border-dashed border-slate-200 p-4 text-left hover:border-orange-300 hover:bg-orange-50/30 transition-colors">
-          <div class="h-10 w-10 shrink-0 rounded-lg bg-orange-100 flex items-center justify-center">
+        <RouterLink to="/situations/nouvelle" class="flex items-center gap-4 rounded-xl border-2 border-dashed border-slate-200 p-4 text-left transition-colors hover:border-orange-300 hover:bg-orange-50/30">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100">
             <svg class="h-5 w-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"></line>
               <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -77,12 +75,12 @@ const recentSituations = [
           </div>
           <div>
             <p class="text-sm font-semibold text-slate-900">Nouvelle situation</p>
-            <p class="text-xs text-slate-500 mt-0.5">Déclarer une situation</p>
+            <p class="mt-0.5 text-xs text-slate-500">Déclarer une situation</p>
           </div>
-        </button>
+        </RouterLink>
 
-        <button class="flex items-center gap-4 rounded-xl border-2 border-dashed border-slate-200 p-4 text-left hover:border-blue-300 hover:bg-blue-50/30 transition-colors">
-          <div class="h-10 w-10 shrink-0 rounded-lg bg-blue-100 flex items-center justify-center">
+        <RouterLink to="/documents" class="flex items-center gap-4 rounded-xl border-2 border-dashed border-slate-200 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50/30">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
             <svg class="h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
               <polyline points="17 8 12 3 7 8"></polyline>
@@ -91,12 +89,12 @@ const recentSituations = [
           </div>
           <div>
             <p class="text-sm font-semibold text-slate-900">Télécharger documents</p>
-            <p class="text-xs text-slate-500 mt-0.5">Ajouter des fichiers</p>
+            <p class="mt-0.5 text-xs text-slate-500">Ajouter des fichiers</p>
           </div>
-        </button>
+        </RouterLink>
 
-        <button class="flex items-center gap-4 rounded-xl border-2 border-dashed border-slate-200 p-4 text-left hover:border-slate-300 hover:bg-slate-50 transition-colors">
-          <div class="h-10 w-10 shrink-0 rounded-lg bg-slate-100 flex items-center justify-center">
+        <RouterLink to="/profil" class="flex items-center gap-4 rounded-xl border-2 border-dashed border-slate-200 p-4 text-left transition-colors hover:border-slate-300 hover:bg-slate-50">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100">
             <svg class="h-5 w-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
@@ -106,64 +104,46 @@ const recentSituations = [
           </div>
           <div>
             <p class="text-sm font-semibold text-slate-900">Mettre à jour profil</p>
-            <p class="text-xs text-slate-500 mt-0.5">Modifier vos informations</p>
+            <p class="mt-0.5 text-xs text-slate-500">Modifier vos informations</p>
           </div>
-        </button>
+        </RouterLink>
       </div>
     </div>
 
-    <!-- Recent situations -->
     <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div class="flex items-center justify-between">
         <h3 class="text-base font-semibold text-slate-900">Mes situations récentes</h3>
-        <button class="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+        <RouterLink to="/situations" class="flex items-center gap-1 text-sm text-slate-500 transition-colors hover:text-slate-700">
           Voir tout
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
-        </button>
+        </RouterLink>
       </div>
 
       <div class="mt-4 space-y-3">
         <article
           v-for="item in recentSituations"
           :key="item.title"
-          class="rounded-xl border border-slate-200 p-5 hover:border-slate-300 transition-colors cursor-pointer"
+          class="cursor-pointer rounded-xl border border-slate-200 p-5 transition-colors hover:border-slate-300"
         >
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2.5 flex-wrap">
+            <div class="flex flex-wrap items-center gap-2.5">
               <h4 class="text-sm font-semibold text-slate-900">{{ item.title }}</h4>
               <span :class="['rounded-full px-2.5 py-0.5 text-xs font-medium', item.statusClass]">{{ item.status }}</span>
             </div>
-            <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </div>
-          <p class="mt-2.5 text-sm text-slate-700 font-medium">{{ item.company }}</p>
+          <p class="mt-2.5 text-sm font-medium text-slate-700">{{ item.company }}</p>
           <p class="mt-1 text-sm text-slate-500">{{ item.description }}</p>
           <div class="mt-3 flex items-center gap-4 text-xs text-slate-400">
-            <span class="flex items-center gap-1.5">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              Début : {{ item.start }}
-            </span>
-            <span class="flex items-center gap-1.5">
-              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="16" y1="2" x2="16" y2="6"></line>
-                <line x1="8" y1="2" x2="8" y2="6"></line>
-                <line x1="3" y1="10" x2="21" y2="10"></line>
-              </svg>
-              Fin : {{ item.end }}
-            </span>
+            <span>Début : {{ item.start }}</span>
+            <span>Fin : {{ item.end }}</span>
           </div>
         </article>
       </div>
     </div>
-
   </section>
 </template>
