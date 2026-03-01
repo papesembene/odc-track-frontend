@@ -5,17 +5,24 @@ import ValidationsPage from '@/modules/pole-emploi/pages/ValidationsPage.vue'
 import ApprenantsListPage from '@/modules/pole-emploi/pages/ApprenantsListPage.vue'
 import ApprenantDetailPage from '@/modules/pole-emploi/pages/ApprenantDetailPage.vue'
 import PoleEmploiStatistiquesPage from '@/modules/pole-emploi/pages/PoleEmploiStatistiquesPage.vue'
+import ApprenantDashboardPage from '@/modules/apprenant/pages/ApprenantDashboardPage.vue'
 import PlaceholderBackofficePage from '@/modules/pole-emploi/pages/PlaceholderBackofficePage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', name: 'login', component: LoginPage },
+
+    // Pole Emploi
     { path: '/dashboard', name: 'dashboard', component: PoleEmploiDashboardPage },
     { path: '/validations', name: 'validations', component: ValidationsPage },
     { path: '/apprenants', name: 'apprenants', component: ApprenantsListPage },
     { path: '/apprenants/:id', name: 'apprenant-detail', component: ApprenantDetailPage },
     { path: '/statistiques', name: 'statistiques', component: PoleEmploiStatistiquesPage },
+
+    // Apprenant (preview UI)
+    { path: '/dashboard-apprenant', name: 'dashboard-apprenant', component: ApprenantDashboardPage },
+
     {
       path: '/parametres',
       name: 'parametres',
