@@ -13,6 +13,7 @@ import ApprenantSituationsPage from '@/modules/apprenant/pages/ApprenantSituatio
 import ApprenantNewSituationPage from '@/modules/apprenant/pages/ApprenantNewSituationPage.vue'
 import ApprenantDocumentsPage from '@/modules/apprenant/pages/ApprenantDocumentsPage.vue'
 import ApprenantProfilPage from '@/modules/apprenant/pages/ApprenantProfilPage.vue'
+import ManagerDashboardPage from '@/modules/manager/pages/ManagerDashboardPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -50,6 +51,9 @@ const router = createRouter({
       name: 'apprenant-profil',
       component: ApprenantProfilPage,
     },
+
+    // Manager (UI flow)
+    { path: '/dashboard-manager', name: 'dashboard-manager', component: ManagerDashboardPage },
 
     { path: '/', redirect: '/login' },
   ],
