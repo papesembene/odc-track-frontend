@@ -6,6 +6,7 @@ const router = useRouter()
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const router = useRouter()
 
 const demoAccounts = [
   { email: 'apprenant@odc.sn', role: 'Apprenant' },
@@ -14,7 +15,11 @@ const demoAccounts = [
 ]
 
 const onSubmit = () => {
+
   router.push('/validations')
+
+  router.push('/dashboard')
+
 }
 </script>
 
