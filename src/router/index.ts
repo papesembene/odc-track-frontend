@@ -11,6 +11,7 @@ import PlaceholderBackofficePage from '@/modules/pole-emploi/pages/PlaceholderBa
 import ApprenantDashboardPage from '@/modules/apprenant/pages/ApprenantDashboardPage.vue'
 import ApprenantSituationsPage from '@/modules/apprenant/pages/ApprenantSituationsPage.vue'
 import ApprenantNewSituationPage from '@/modules/apprenant/pages/ApprenantNewSituationPage.vue'
+import ApprenantDocumentsPage from '@/modules/apprenant/pages/ApprenantDocumentsPage.vue'
 import ApprenantPlaceholderPage from '@/modules/apprenant/pages/ApprenantPlaceholderPage.vue'
 
 const router = createRouter({
@@ -42,8 +43,7 @@ const router = createRouter({
     {
       path: '/documents',
       name: 'apprenant-documents',
-      component: ApprenantPlaceholderPage,
-      props: { title: 'Documents', activeMenu: 'documents' },
+      component: ApprenantDocumentsPage,
     },
     {
       path: '/profil',
