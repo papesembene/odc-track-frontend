@@ -12,7 +12,7 @@ import ApprenantDashboardPage from '@/modules/apprenant/pages/ApprenantDashboard
 import ApprenantSituationsPage from '@/modules/apprenant/pages/ApprenantSituationsPage.vue'
 import ApprenantNewSituationPage from '@/modules/apprenant/pages/ApprenantNewSituationPage.vue'
 import ApprenantDocumentsPage from '@/modules/apprenant/pages/ApprenantDocumentsPage.vue'
-import ApprenantPlaceholderPage from '@/modules/apprenant/pages/ApprenantPlaceholderPage.vue'
+import ApprenantProfilPage from '@/modules/apprenant/pages/ApprenantProfilPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -48,8 +48,7 @@ const router = createRouter({
     {
       path: '/profil',
       name: 'apprenant-profil',
-      component: ApprenantPlaceholderPage,
-      props: { title: 'Mon profil', activeMenu: 'profil' },
+      component: ApprenantProfilPage,
     },
 
     { path: '/', redirect: '/login' },
