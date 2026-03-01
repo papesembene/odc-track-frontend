@@ -10,6 +10,15 @@ const props = defineProps<{
 const mobileOpen = ref(false)
 
 const menu = computed(() => [
+
+  { key: 'dashboard', label: 'Tableau de bord', to: '/dashboard' },
+  { key: 'validations', label: 'Validations', to: '/validations' },
+  { key: 'apprenants', label: 'Apprenants', to: '/apprenants' },
+  { key: 'statistiques', label: 'Statistiques', to: '/statistiques' },
+])
+
+const itemClass = (key: string) =>
+
   { key: 'dashboard',    label: 'Tableau de bord', to: '/dashboard' },
   { key: 'validations',  label: 'Validations',     to: '/validations' },
   { key: 'apprenants',   label: 'Apprenants',      to: '/apprenants' },
@@ -17,6 +26,7 @@ const menu = computed(() => [
 ])
 
 const linkClass = (key: string) =>
+
   key === props.activeMenu
     ? 'flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium bg-orange-500 text-white'
     : 'flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100 transition-colors'
@@ -32,10 +42,15 @@ const linkClass = (key: string) =>
         <!-- Logo -->
         <div class="flex items-center gap-3 border-b border-slate-200 px-5 py-5">
           <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500">
+
+            <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+
             <!-- graduation cap / chart icon -->
             <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
               <path d="M6 12v5c3.33 1.67 8.67 1.67 12 0v-5"/>
+
             </svg>
           </div>
           <div>
@@ -48,18 +63,29 @@ const linkClass = (key: string) =>
         <nav class="flex-1 space-y-1 px-3 py-5">
 
           <!-- Tableau de bord -->
+
+          <RouterLink :to="menu[0].to" :class="itemClass('dashboard')">
+            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+
           <RouterLink to="/dashboard" :class="linkClass('dashboard')">
             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="7" height="7" rx="1"/>
               <rect x="14" y="3" width="7" height="7" rx="1"/>
               <rect x="3" y="14" width="7" height="7" rx="1"/>
               <rect x="14" y="14" width="7" height="7" rx="1"/>
+
             </svg>
             <span>Tableau de bord</span>
           </RouterLink>
 
           <!-- Validations -->
+
+          <RouterLink :to="menu[1].to" :class="itemClass('validations')">
+
           <RouterLink to="/validations" :class="linkClass('validations')">
+
             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="3" y="3" width="18" height="18" rx="2"/>
               <polyline points="9 12 11.5 14.5 15.5 10"/>
@@ -68,6 +94,8 @@ const linkClass = (key: string) =>
           </RouterLink>
 
           <!-- Apprenants -->
+
+          <RouterLink :to="menu[2].to" :class="itemClass('apprenants')">
           <RouterLink to="/apprenants" :class="linkClass('apprenants')">
             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="8" r="4"/>
@@ -77,7 +105,11 @@ const linkClass = (key: string) =>
           </RouterLink>
 
           <!-- Statistiques -->
+
+          <RouterLink :to="menu[3].to" :class="itemClass('statistiques')">
+
           <RouterLink to="/statistiques" :class="linkClass('statistiques')">
+
             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"/>
               <line x1="12" y1="20" x2="12" y2="4"/>
@@ -109,7 +141,10 @@ const linkClass = (key: string) =>
         <!-- Header -->
         <header class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 lg:px-8">
           <div class="flex items-center gap-3">
+
+
             <!-- Mobile menu toggle -->
+
             <button
               class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 lg:hidden"
               @click="mobileOpen = true"
@@ -133,18 +168,31 @@ const linkClass = (key: string) =>
 
             <div class="hidden h-8 w-px bg-slate-200 lg:block"></div>
 
+
+            <!-- User info -->
+
             <!-- User -->
+
             <div class="hidden text-right lg:block">
               <p class="text-sm font-semibold leading-tight text-slate-900">Moussa Ba</p>
               <p class="text-xs text-slate-500">Pôle Emploi</p>
             </div>
+
+            <!-- Avatar -->
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-sm font-semibold text-white">
+
             <div class="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
+
               M
             </div>
           </div>
         </header>
 
+
+        <!-- Content -->
+
         <!-- Page content -->
+
         <main class="flex-1 p-5 lg:p-7">
           <slot />
         </main>
@@ -156,7 +204,18 @@ const linkClass = (key: string) =>
       <button class="absolute inset-0 bg-black/40" @click="mobileOpen = false" />
       <aside class="relative flex h-full w-[260px] flex-col bg-white shadow-xl">
         <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4">
+
+          <div class="flex items-center gap-2">
+            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500">
+              <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            </div>
+            <span class="text-sm font-bold text-slate-900">ODC Track</span>
+          </div>
+
           <span class="text-sm font-bold text-slate-900">ODC Track</span>
+
           <button class="text-slate-400 hover:text-slate-600" @click="mobileOpen = false">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -164,6 +223,10 @@ const linkClass = (key: string) =>
           </button>
         </div>
         <nav class="flex-1 space-y-1 px-3 py-5">
+
+          <RouterLink v-for="item in menu" :key="item.key" :to="item.to" :class="itemClass(item.key)" @click="mobileOpen = false">
+            <span class="text-sm">{{ item.label }}</span>
+
           <RouterLink
             v-for="item in menu"
             :key="item.key"
@@ -172,6 +235,7 @@ const linkClass = (key: string) =>
             @click="mobileOpen = false"
           >
             <span>{{ item.label }}</span>
+
           </RouterLink>
         </nav>
       </aside>

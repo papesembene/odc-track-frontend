@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -14,7 +15,11 @@ const demoAccounts = [
 ]
 
 const onSubmit = () => {
+
+  router.push('/validations')
+
   router.push('/dashboard')
+
 }
 </script>
 
