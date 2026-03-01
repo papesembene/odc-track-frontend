@@ -15,6 +15,7 @@ import ApprenantDocumentsPage from '@/modules/apprenant/pages/ApprenantDocuments
 import ApprenantProfilPage from '@/modules/apprenant/pages/ApprenantProfilPage.vue'
 import ManagerDashboardPage from '@/modules/manager/pages/ManagerDashboardPage.vue'
 import ManagerApprenantsPage from '@/modules/manager/pages/ManagerApprenantsPage.vue'
+import ManagerStatistiquesPage from '@/modules/manager/pages/ManagerStatistiquesPage.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -56,6 +57,7 @@ const router = createRouter({
     // Manager (UI flow)
     { path: '/dashboard-manager', name: 'dashboard-manager', component: ManagerDashboardPage },
     { path: '/manager/apprenants', name: 'manager-apprenants', component: ManagerApprenantsPage },
+    { path: '/manager/statistiques', name: 'manager-statistiques', component: ManagerStatistiquesPage },
 
     { path: '/', redirect: '/login' },
   ],
