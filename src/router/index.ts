@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { tokenStorage } from '@/core/auth/token-storage'
+import { getDefaultPathByRole } from '@/core/auth/role-redirect'
 import LoginPage from '@/modules/auth/pages/LoginPage.vue'
 
 import PoleEmploiDashboardPage from '@/modules/pole-emploi/pages/PoleEmploiDashboardPage.vue'
@@ -69,6 +71,22 @@ const router = createRouter({
 
     { path: '/', redirect: '/login' },
   ],
+})
+
+router.beforeEach((to) => {
+  const isAuthenticated = Boolean(tokenStorage.getAccessToken())
+  const isLoginPage = to.path === '/login'
+  const role = localStorage.getItem('role')
+
+  if (!isAuthenticated && !isLoginPage) {
+    return { path: '/login' }
+  }
+
+  if (isAuthenticated && isLoginPage) {
+    return { path: getDefaultPathByRole(role) }
+  }
+
+  return true
 })
 
 export default router
