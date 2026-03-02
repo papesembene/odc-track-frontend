@@ -17,6 +17,7 @@ import ManagerDashboardPage from '@/modules/manager/pages/ManagerDashboardPage.v
 import ManagerApprenantsPage from '@/modules/manager/pages/ManagerApprenantsPage.vue'
 import CoachDashboardPage from '@/modules/coach/pages/CoachDashboardPage.vue'
 import CoachApprenantsPage from '@/modules/coach/pages/CoachApprenantsPage.vue'
+import CoachApprenantDetailPage from '@/modules/coach/pages/CoachApprenantDetailPage.vue'
 import CoachStatistiquesPage from '@/modules/coach/pages/CoachStatistiquesPage.vue'
 
 const router = createRouter({
@@ -63,6 +64,7 @@ const router = createRouter({
     // Coach (UI flow)
     { path: '/coach/dashboard', name: 'coach-dashboard', component: CoachDashboardPage },
     { path: '/coach/apprenants', name: 'coach-apprenants', component: CoachApprenantsPage },
+    { path: '/coach/apprenants/:id', name: 'coach-apprenant-detail', component: CoachApprenantDetailPage },
     { path: '/coach/statistiques', name: 'coach-statistiques', component: CoachStatistiquesPage },
 
     { path: '/', redirect: '/login' },

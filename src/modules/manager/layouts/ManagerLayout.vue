@@ -15,7 +15,7 @@ const menu: Array<{ key: ManagerMenuKey; label: string; to: string }> = [
   { key: 'dashboard',    label: 'Tableau de bord', to: '/dashboard-manager' },
   { key: 'apprenants',  label: 'Apprenants',       to: '/manager/apprenants' },
   { key: 'coaches',     label: 'Coaches',           to: '/manager/coaches' },
-  { key: 'statistiques',label: 'Statistiques',      to: '/statistiques' },
+  { key: 'statistiques',label: 'Statistiques',      to: '/manager/statistiques' },
 ]
 
 const linkClass = (key: ManagerMenuKey) => {
