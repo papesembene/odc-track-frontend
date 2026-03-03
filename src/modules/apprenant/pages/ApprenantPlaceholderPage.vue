@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ApprenantLayout from '@/shared/layouts/ApprenantLayout.vue'
+import ApprenantLayout from '../../../shared/layouts/ApprenantLayout.vue'
 
 defineProps<{
   title: string

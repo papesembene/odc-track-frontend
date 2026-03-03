@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import StatCard from '@/modules/dashboard/components/StatCard.vue'
+import StatCard from './StatCard.vue'
 
 const search = ref('')
 const selectedPromo = ref('')

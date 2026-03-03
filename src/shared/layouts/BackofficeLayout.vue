@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useCurrentUser } from '../../core/auth/useCurrentUser'
 
 type MenuKey = 'dashboard' | 'validations' | 'apprenants' | 'statistiques'
 
@@ -17,6 +18,29 @@ const menu = computed(() => [
   { key: 'apprenants' as const, label: 'Apprenants', to: '/apprenants' },
   { key: 'statistiques' as const, label: 'Statistiques', to: '/statistiques' },
 ])
+
+
+const { user, userName, role, hydrateCurrentUser } = useCurrentUser()
+
+const roleLabel = computed(() => {
+  if (role.value === 'APPRENANT') return 'Apprenant'
+  if (role.value === 'COACH') return 'Coach'
+  if (role.value === 'POLE_EMPLOI') return 'Pôle Emploi'
+  if (role.value === 'MANAGER') return 'Manager'
+  if (role.value === 'ADMIN') return 'Admin'
+  return 'Utilisateur'
+})
+
+const avatarInitial = computed(() => {
+  const prenom = user.value.prenom?.trim() ?? ''
+  const nom = user.value.nom?.trim() ?? ''
+  const source = prenom || nom || userName.value || 'U'
+  return source[0]?.toUpperCase() ?? 'U'
+})
+
+onMounted(() => {
+  hydrateCurrentUser()
+})
 
 const linkClass = (key: MenuKey) => {
   const base = 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors'
@@ -105,11 +129,11 @@ const linkClass = (key: MenuKey) => {
             <div class="hidden h-8 w-px bg-slate-200 lg:block"></div>
 
             <div class="hidden text-right lg:block">
-              <p class="text-sm font-semibold leading-tight text-slate-900">Moussa Ba</p>
-              <p class="text-xs text-slate-500">Pôle Emploi</p>
+              <p class="text-sm font-semibold leading-tight text-slate-900">{{ userName }}</p>
+              <p class="text-xs text-slate-500">{{ roleLabel }}</p>
             </div>
 
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">M</div>
+            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">{{ avatarInitial }}</div>
           </div>
         </header>
 

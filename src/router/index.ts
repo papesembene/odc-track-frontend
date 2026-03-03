@@ -13,6 +13,7 @@ import PlaceholderBackofficePage from '@/modules/pole-emploi/pages/PlaceholderBa
 import ApprenantDashboardPage from '@/modules/apprenant/pages/ApprenantDashboardPage.vue'
 import ApprenantSituationsPage from '@/modules/apprenant/pages/ApprenantSituationsPage.vue'
 import ApprenantNewSituationPage from '@/modules/apprenant/pages/ApprenantNewSituationPage.vue'
+import ApprenantSituationDetailPage from '@/modules/apprenant/pages/ApprenantSituationDetailPage.vue'
 import ApprenantDocumentsPage from '@/modules/apprenant/pages/ApprenantDocumentsPage.vue'
 import ApprenantProfilPage from '@/modules/apprenant/pages/ApprenantProfilPage.vue'
 import ManagerDashboardPage from '@/modules/manager/pages/ManagerDashboardPage.vue'
@@ -47,6 +48,12 @@ const router = createRouter({
       path: '/situations/nouvelle',
       name: 'apprenant-situation-new',
       component: ApprenantNewSituationPage,
+    },
+
+    {
+      path: '/situations/:id',
+      name: 'apprenant-situation-detail',
+      component: ApprenantSituationDetailPage,
     },
     {
       path: '/documents',

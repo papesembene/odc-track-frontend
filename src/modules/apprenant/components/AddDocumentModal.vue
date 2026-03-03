@@ -1,51 +1,121 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { api } from '../../../core/api/axios'
+import { showToast } from '../../../core/ui/toast'
 
-defineProps<{ open: boolean }>()
-const emit = defineEmits<{ close: [] }>()
+type SituationOption = { id: string; label: string }
+type UiDocType = 'Convention' | 'Attestation' | 'Rapport' | 'Contrat' | 'Autre'
 
-const situationOptions = [
-  { id: '1', label: 'Stage – Orange Digital Center (15/01/2024)' },
-  { id: '2', label: 'Emploi – WebCorp Sénégal (20/04/2024)' },
-]
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    situationOptions?: SituationOption[]
+  }>(),
+  {
+    situationOptions: () => [],
+  },
+)
 
-const typeOptions = ['Convention', 'Attestation', 'Rapport', 'Contrat', 'Autre']
+const emit = defineEmits<{
+  close: []
+  uploaded: []
+}>()
 
+const isUploading = ref(false)
 const selectedSituation = ref('')
-const selectedType = ref('')
+const selectedType = ref<UiDocType | ''>('')
 const droppedFile = ref<File | null>(null)
 const isDragOver = ref(false)
-
-const onDrop = (e: DragEvent) => {
-  isDragOver.value = false
-  const file = e.dataTransfer?.files[0]
-  if (file) droppedFile.value = file
-}
-
-const onFileInput = (e: Event) => {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (file) droppedFile.value = file
-}
-
 const fileInputRef = ref<HTMLInputElement | null>(null)
+
+const typeOptions: UiDocType[] = ['Convention', 'Attestation', 'Rapport', 'Contrat', 'Autre']
+
+// Mapping UI -> enum backend attendu par l'API documents.
+const DOC_TYPE_MAP: Record<UiDocType, string> = {
+  Convention: 'LETTRE_MISSION',
+  Attestation: 'ATTESTATION',
+  Rapport: 'AUTRE',
+  Contrat: 'CONTRAT',
+  Autre: 'AUTRE',
+}
+
+const resetForm = () => {
+  selectedSituation.value = ''
+  selectedType.value = ''
+  droppedFile.value = null
+  isDragOver.value = false
+}
+
+const closeModal = () => {
+  resetForm()
+  emit('close')
+}
+
 const browseFiles = () => fileInputRef.value?.click()
 
-const onSubmit = () => {
-  console.log({ situationId: selectedSituation.value, type: selectedType.value, file: droppedFile.value?.name })
-  emit('close')
+// Gère le drop du fichier dans la zone de drag & drop.
+const onDrop = (event: DragEvent) => {
+  isDragOver.value = false
+  const file = event.dataTransfer?.files?.[0]
+  if (file) droppedFile.value = file
+}
+
+const onFileInput = (event: Event) => {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (file) droppedFile.value = file
+}
+
+// Soumet le document (multipart/form-data) sur l'endpoint apprenant.
+const onSubmit = async () => {
+  if (!selectedSituation.value) {
+    showToast('Sélectionnez une situation', 'error')
+    return
+  }
+  if (!selectedType.value) {
+    showToast('Sélectionnez un type de document', 'error')
+    return
+  }
+  if (!droppedFile.value) {
+    showToast('Ajoutez un fichier', 'error')
+    return
+  }
+
+  isUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', droppedFile.value)
+    formData.append('situationId', selectedSituation.value)
+    formData.append('type', DOC_TYPE_MAP[selectedType.value])
+
+    await api.post('/apprenants/me/documents', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    showToast('Document ajouté avec succès', 'success')
+    emit('uploaded')
+    closeModal()
+  } catch (error: any) {
+    const apiMessage = error?.response?.data?.message
+    const message = Array.isArray(apiMessage)
+      ? apiMessage.join(', ')
+      : apiMessage || "Erreur lors de l'upload du document"
+    showToast(message, 'error')
+  } finally {
+    isUploading.value = false
+  }
 }
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="modal">
-      <div
+        <div
         v-if="open"
         class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        @click.self="emit('close')"
+        @click.self="closeModal"
       >
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="emit('close')" />
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="closeModal" />
 
         <!-- Modal -->
         <div class="relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-2xl">
@@ -54,7 +124,7 @@ const onSubmit = () => {
             <h3 class="text-lg font-bold text-slate-900">Ajouter un document</h3>
             <button
               class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-              @click="emit('close')"
+              @click="closeModal"
             >
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -73,7 +143,9 @@ const onSubmit = () => {
                   class="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm text-slate-700 outline-none focus:border-orange-400"
                 >
                   <option value="">Sélectionner une situation</option>
-                  <option v-for="s in situationOptions" :key="s.id" :value="s.id">{{ s.label }}</option>
+                  <option v-for="s in props.situationOptions" :key="s.id" :value="s.id">
+                    {{ s.label }}
+                  </option>
                 </select>
                 <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="6 9 12 15 18 9" />
@@ -128,6 +200,7 @@ const onSubmit = () => {
                 <button
                   type="button"
                   class="rounded-xl bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+                  :disabled="isUploading"
                   @click="browseFiles"
                 >
                   Parcourir les fichiers
@@ -144,19 +217,21 @@ const onSubmit = () => {
             <button
               type="button"
               class="rounded-xl px-5 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100"
-              @click="emit('close')"
+              :disabled="isUploading"
+              @click="closeModal"
             >
               Annuler
             </button>
             <button
               type="button"
               class="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+              :disabled="isUploading"
               @click="onSubmit"
             >
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
               </svg>
-              Téléverser
+              {{ isUploading ? 'Téléversement...' : 'Téléverser' }}
             </button>
           </div>
         </div>

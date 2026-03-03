@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import ApprenantLayout from '@/shared/layouts/ApprenantLayout.vue'
-import DocumentGroup from '@/modules/apprenant/components/DocumentGroup.vue'
-import AddDocumentModal from '@/modules/apprenant/components/AddDocumentModal.vue'
-import type { DocumentItem } from '@/modules/apprenant/components/DocumentGroup.vue'
+import { computed, onMounted, ref } from 'vue'
+import ApprenantLayout from '../../../shared/layouts/ApprenantLayout.vue'
+import DocumentGroup from '../components/DocumentGroup.vue'
+import AddDocumentModal from '../components/AddDocumentModal.vue'
+import type { DocumentItem } from '../components/DocumentGroup.vue'
+import { api } from '../../../core/api/axios'
+import { showToast } from '../../../core/ui/toast'
+import Swal from 'sweetalert2'
 
 type DocStatus = 'Validée' | 'En attente' | 'En cours' | 'Rejetée'
 type SituationType = 'Stage' | 'Emploi' | 'Alternance' | 'Projet'
@@ -20,67 +23,257 @@ type SituationGroup = {
 }
 
 const showModal = ref(false)
+const isLoading = ref(false)
+const isDownloading = ref(false)
+const deletingDocumentId = ref<string | null>(null)
 
-const groups = ref<SituationGroup[]>([
-  {
-    id: '1',
-    type: 'Stage',
-    status: 'Validée',
-    dateDebut: '15/01/2024',
-    dateFin: '15/04/2024',
-    description: 'Stage de développement web chez Sonatel, travail sur des applications React et Node.js',
-    documents: [
-      { id: 'd1', name: 'Convention de stage Sonatel.pdf', type: 'Convention', date: '12/01/2024' },
-      { id: 'd2', name: 'Attestation de stage.pdf', type: 'Attestation', date: '16/04/2024' },
-      { id: 'd3', name: 'Rapport de stage final.pdf', type: 'Rapport', date: '18/04/2024' },
-    ],
-  },
-  {
-    id: '2',
-    type: 'Emploi',
-    status: 'En attente',
-    entreprise: 'WebCorp Sénégal',
-    dateDebut: '20/04/2024',
-    description: "CDI développeur full-stack, maintenance et évolution d'applications web clients",
-    documents: [
-      { id: 'd4', name: 'Contrat CDI WebCorp.pdf', type: 'Contrat', date: '20/04/2024' },
-    ],
-  },
-])
+type ApiDocument = {
+  id: string
+  type: string
+  fichier: string
+  dateUpload?: string
+  createdAt?: string
+}
+
+type ApiSituation = {
+  id: string
+  statut: 'RECHERCHE_EMPLOI' | 'EN_STAGE' | 'EN_EMPLOI' | 'PROJET_PERSO' | 'POURSUITE_ETUDES'
+  valide: boolean
+  dateDebut: string
+  dateFin: string | null
+  commentaire: string | null
+  entreprise?: { nom?: string | null } | null
+  nomEntrepriseLibre?: string | null
+  documents?: ApiDocument[]
+}
+
+const groups = ref<SituationGroup[]>([])
+
+const formatDate = (value?: string | null) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('fr-FR')
+}
+
+const extractFileName = (path: string) => {
+  if (!path) return 'Document'
+  const chunks = path.split('/')
+  return chunks[chunks.length - 1] || path
+}
+
+const mapType = (statut: ApiSituation['statut']): SituationType => {
+  if (statut === 'EN_STAGE') return 'Stage'
+  if (statut === 'EN_EMPLOI') return 'Emploi'
+  if (statut === 'POURSUITE_ETUDES') return 'Alternance'
+  return 'Projet'
+}
+
+const mapStatus = (item: ApiSituation): DocStatus => {
+  if (item.valide) return 'Validée'
+  if (!item.dateFin) return 'En cours'
+
+  const endDate = new Date(item.dateFin)
+  const today = new Date()
+  if (!Number.isNaN(endDate.getTime()) && endDate >= today) return 'En cours'
+  return 'En attente'
+}
+
+const loadGroups = async () => {
+  isLoading.value = true
+  try {
+    const { data } = await api.get('/apprenants/me/situations')
+    const situations: ApiSituation[] = data?.data ?? []
+
+    groups.value = situations.map((situation) => ({
+      id: situation.id,
+      type: mapType(situation.statut),
+      status: mapStatus(situation),
+      entreprise: situation.entreprise?.nom || situation.nomEntrepriseLibre || undefined,
+      dateDebut: formatDate(situation.dateDebut),
+      dateFin: formatDate(situation.dateFin) || undefined,
+      description: situation.commentaire || 'Aucune description',
+      documents: (situation.documents ?? []).map((doc) => ({
+        id: doc.id,
+        name: extractFileName(doc.fichier),
+        type: doc.type,
+        date: formatDate(doc.dateUpload ?? doc.createdAt),
+      })),
+    }))
+  } catch (error: any) {
+    const apiMessage = error?.response?.data?.message
+    const message = Array.isArray(apiMessage)
+      ? apiMessage.join(', ')
+      : apiMessage || 'Impossible de charger les documents'
+    showToast(message, 'error')
+  } finally {
+    isLoading.value = false
+  }
+}
 
 const stats = computed(() => ({
   total: groups.value.reduce((acc, g) => acc + g.documents.length, 0),
   situations: groups.value.length,
-  validees: groups.value.filter(g => g.status === 'Validée').length,
+  validees: groups.value.filter((g) => g.status === 'Validée').length,
 }))
+
+const situationOptions = computed(() =>
+  groups.value.map((group) => ({
+    id: group.id,
+    label: `${group.type} - ${group.entreprise ?? 'Entreprise'} (${group.dateDebut})`,
+  })),
+)
+
+// Extrait l'origine API à partir de baseURL (ex: http://localhost:3000/api/v1 -> http://localhost:3000).
+const getApiOrigin = () => {
+  const baseUrl = String(api.defaults.baseURL ?? '')
+  return baseUrl.replace(/\/api\/v\d+\/?$/, '')
+}
+
+// Transforme le chemin stocké en URL exploitable par le navigateur.
+const resolveFileUrl = (filePath: string) => {
+  if (!filePath) return ''
+  if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath
+  const origin = getApiOrigin()
+  const normalizedPath = filePath.startsWith('/') ? filePath : `/${filePath}`
+  return `${origin}${normalizedPath}`
+}
+
+const getFilePathByDocumentId = async (documentId: string) => {
+  const { data } = await api.get(`/documents/${documentId}`)
+  return data?.data?.fichier as string | undefined
+}
+
+const openFile = (url: string) => {
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+const downloadFile = (url: string, fileName: string) => {
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.target = '_blank'
+  link.rel = 'noopener noreferrer'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+const handleViewDocument = async (documentId: string) => {
+  try {
+    const filePath = await getFilePathByDocumentId(documentId)
+    if (!filePath) {
+      showToast('Fichier introuvable pour ce document', 'error')
+      return
+    }
+
+    const url = resolveFileUrl(filePath)
+    if (!url) {
+      showToast('URL du fichier invalide', 'error')
+      return
+    }
+
+    openFile(url)
+  } catch (error: any) {
+    const apiMessage = error?.response?.data?.message
+    const message = Array.isArray(apiMessage)
+      ? apiMessage.join(', ')
+      : apiMessage || "Impossible d'ouvrir le document"
+    showToast(message, 'error')
+  }
+}
+
+const handleDownloadDocument = async (documentId: string) => {
+  if (isDownloading.value) return
+
+  isDownloading.value = true
+  try {
+    const filePath = await getFilePathByDocumentId(documentId)
+    if (!filePath) {
+      showToast('Fichier introuvable pour ce document', 'error')
+      return
+    }
+
+    const url = resolveFileUrl(filePath)
+    if (!url) {
+      showToast('URL du fichier invalide', 'error')
+      return
+    }
+
+    downloadFile(url, extractFileName(filePath))
+    showToast('Téléchargement lancé', 'success')
+  } catch (error: any) {
+    const apiMessage = error?.response?.data?.message
+    const message = Array.isArray(apiMessage)
+      ? apiMessage.join(', ')
+      : apiMessage || 'Impossible de télécharger le document'
+    showToast(message, 'error')
+  } finally {
+    isDownloading.value = false
+  }
+}
+
+
+// Confirme puis supprime un document via l'API apprenant, et recharge la liste.
+const handleDeleteDocument = async (documentId: string) => {
+  if (deletingDocumentId.value) return
+
+  const result = await Swal.fire({
+    title: 'Supprimer ce document ?',
+    text: 'Cette action est definitive.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#f97316',
+    cancelButtonColor: '#94a3b8',
+    confirmButtonText: 'Oui, supprimer',
+    cancelButtonText: 'Annuler',
+  })
+
+  if (!result.isConfirmed) return
+
+  deletingDocumentId.value = documentId
+  try {
+    await api.delete(`/documents/${documentId}`)
+    showToast('Document supprimé avec succès', 'success')
+    await loadGroups()
+  } catch (error: any) {
+    const apiMessage = error?.response?.data?.message
+    const message = Array.isArray(apiMessage)
+      ? apiMessage.join(', ')
+      : apiMessage || 'Impossible de supprimer le document'
+    showToast(message, 'error')
+  } finally {
+    deletingDocumentId.value = null
+  }
+}
+
+onMounted(loadGroups)
 </script>
 
 <template>
   <ApprenantLayout title="Mes documents" active-menu="documents">
-    <section class="space-y-5">
-
-      <!-- Header -->
+    <section class="space-y-6">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-slate-900">Mes documents</h2>
+          <h2 class="text-2xl font-extrabold text-slate-900">Mes documents</h2>
           <p class="mt-1 text-sm text-slate-500">Gérez tous vos documents liés à vos situations professionnelles</p>
         </div>
         <button
-          class="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-orange-600"
+          class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-orange-500/30 transition-all hover:-translate-y-0.5 hover:shadow-lg"
           @click="showModal = true"
         >
           <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
           Ajouter un document
         </button>
       </div>
 
-      <!-- Stats -->
       <div class="grid gap-4 sm:grid-cols-3">
-        <!-- Documents totaux -->
-        <article class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-orange-100">
+        <article class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-100 transition-transform group-hover:scale-110">
             <svg class="h-5 w-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -89,40 +282,53 @@ const stats = computed(() => ({
             </svg>
           </div>
           <div>
-            <p class="text-3xl font-bold text-slate-900">{{ stats.total }}</p>
-            <p class="text-sm text-slate-500">Documents totaux</p>
+            <p class="text-3xl font-extrabold text-slate-900">{{ stats.total }}</p>
+            <p class="mt-0.5 text-xs font-medium uppercase tracking-wide text-slate-400">Documents totaux</p>
           </div>
         </article>
 
-        <!-- Situations -->
-        <article class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100">
+        <article class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-100 transition-transform group-hover:scale-110">
             <svg class="h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
+              <rect x="2" y="7" width="20" height="14" rx="2" />
+              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
             </svg>
           </div>
           <div>
-            <p class="text-3xl font-bold text-blue-600">{{ stats.situations }}</p>
-            <p class="text-sm text-slate-500">Situations</p>
+            <p class="text-3xl font-extrabold text-blue-600">{{ stats.situations }}</p>
+            <p class="mt-0.5 text-xs font-medium uppercase tracking-wide text-slate-400">Situations</p>
           </div>
         </article>
 
-        <!-- Situations validées -->
-        <article class="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100">
+        <article class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 transition-transform group-hover:scale-110">
             <svg class="h-5 w-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
           </div>
           <div>
-            <p class="text-3xl font-bold text-emerald-600">{{ stats.validees }}</p>
-            <p class="text-sm text-slate-500">Situations validées</p>
+            <p class="text-3xl font-extrabold text-emerald-600">{{ stats.validees }}</p>
+            <p class="mt-0.5 text-xs font-medium uppercase tracking-wide text-slate-400">Situations validées</p>
           </div>
         </article>
       </div>
 
-      <!-- Document groups -->
-      <div class="space-y-4">
+      <div
+        v-if="isLoading"
+        class="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm"
+      >
+        Chargement des documents...
+      </div>
+
+      <div
+        v-else-if="groups.length === 0"
+        class="rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm"
+      >
+        Aucun document disponible pour le moment.
+      </div>
+
+      <div v-else class="space-y-4">
         <DocumentGroup
           v-for="group in groups"
           :key="group.id"
@@ -133,12 +339,32 @@ const stats = computed(() => ({
           :date-fin="group.dateFin"
           :description="group.description"
           :documents="group.documents"
+          :deleting-document-id="deletingDocumentId"
+          @view-document="handleViewDocument"
+          @download-document="handleDownloadDocument"
+          @delete-document="handleDeleteDocument"
         />
       </div>
 
-    </section>
+      <AddDocumentModal
+        :open="showModal"
+        :situation-options="situationOptions"
+        @close="showModal = false"
+        @uploaded="loadGroups"
+      />
 
-    <!-- Modal -->
-    <AddDocumentModal :open="showModal" @close="showModal = false" />
+      <div
+        v-if="isDownloading"
+        class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm"
+      >
+        <div class="flex items-center gap-3 rounded-xl bg-white px-5 py-4 shadow-xl">
+          <svg class="h-5 w-5 animate-spin text-orange-500" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z" />
+          </svg>
+          <p class="text-sm font-medium text-slate-700">Téléchargement en cours...</p>
+        </div>
+      </div>
+    </section>
   </ApprenantLayout>
 </template>

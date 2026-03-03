@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import StatCard from '@/modules/dashboard/components/StatCard.vue'
+import StatCard from './StatCard.vue'
 
 const byStatus = [
   { label: 'Validées', value: 98, total: 203, color: 'bg-emerald-500' },
