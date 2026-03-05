@@ -1,0 +1,5 @@
+nom,prenom,email,genre,adresse,telephone
+,Dupont,jean.dupont1@email.com,M,Dakar,611111111
+Dupont,,jean.dupont2@email.com,M,Dakar,622222222
+Marie,,marie.dupont@email.com,F,Dakar,633333333
+Test,Invalide,pas-un-email-valide,M,Dakar,644444444

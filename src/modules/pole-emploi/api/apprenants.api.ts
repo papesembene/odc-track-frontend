@@ -1,0 +1,138 @@
+import { api } from "../../../core/api/axios";
+import { extractItems } from "./helpers";
+
+/**
+ * Type représentant un apprenant dans la liste.
+ */
+export type ApprenantListItem = {
+  id: string;
+  // Relations
+  user: {
+    id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+  };
+  promotion: {
+    id: string;
+    nom: string;
+  };
+  referentiel: {
+    id: string;
+    nom: string;
+  };
+  // Compteurs de situations
+  _count?: {
+    situations: number;
+  };
+};
+
+/**
+ * Type pour la pagination
+ */
+export type ApprenantsPagination = {
+  items: ApprenantListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+};
+
+/**
+ * Paramètres de requête pour la liste des apprenants
+ */
+export interface ApprenantsQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  promotionId?: string;
+  referentielId?: string;
+}
+
+/**
+ * Récupère la liste paginée des apprenants.
+ *
+ * @param query - Paramètres de pagination et filtres
+ * @returns Promesse avec les apprenants et infos de pagination
+ */
+export async function getApprenants(
+  query?: ApprenantsQueryParams,
+): Promise<ApprenantsPagination> {
+  const params = new URLSearchParams();
+  if (query?.page) params.append("page", String(query.page));
+  if (query?.limit) params.append("limit", String(query.limit));
+  if (query?.search) params.append("search", query.search);
+  if (query?.promotionId) params.append("promotionId", query.promotionId);
+  if (query?.referentielId) params.append("referentielId", query.referentielId);
+
+  const queryString = params.toString();
+  const url = queryString ? `/apprenants?${queryString}` : "/apprenants";
+
+  const res = await api.get(url);
+  const items = extractItems(res);
+
+  // Extraire la pagination depuis la réponse
+  const pagination = res?.data?.data?.pagination || {
+    page: 1,
+    limit: 10,
+    totalItems: items.length,
+    totalPages: 1,
+  };
+
+  return { items, pagination };
+}
+
+/**
+ * Type pour une situation professionnelle
+ */
+export type SituationItem = {
+  id: string;
+  statut: string;
+  dateDebut: string | null;
+  dateFin: string | null;
+  commentaire: string | null;
+  valide: boolean;
+  createdAt: string;
+  entreprise: {
+    nom: string;
+  } | null;
+  nomEntrepriseLibre: string | null;
+};
+
+/**
+ * Type pour le détail complet d'un apprenant
+ */
+export type ApprenantDetail = {
+  id: string;
+  telephone: string | null;
+  user: {
+    id: string;
+    nom: string;
+    prenom: string;
+    email: string;
+  };
+  promotion: {
+    id: string;
+    nom: string;
+  };
+  referentiel: {
+    id: string;
+    nom: string;
+  };
+  situations: SituationItem[];
+};
+
+/**
+ * Récupère le détail d'un apprenant par son ID.
+ *
+ * @param id - UUID de l'apprenant
+ * @returns Détails de l'apprenant
+ */
+export async function getApprenantById(
+  id: string,
+): Promise<ApprenantDetail | null> {
+  const res = await api.get(`/apprenants/${id}`);
+  return res?.data?.data || null;
+}

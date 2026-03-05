@@ -2,12 +2,15 @@
 import { onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
 import Swal from "sweetalert2";
-import { api } from "../../../core/api/axios";
 import { showToast } from "../../../core/ui/toast";
 import ApprenantLayout from "../../../shared/layouts/ApprenantLayout.vue";
-
-type UiSituationType = "STAGE" | "EMPLOI" | "ALTERNANCE" | "PROJET";
-type CompanyMode = "PARTNER" | "EXTERNAL";
+import {
+  getEntreprises,
+  createSituationForApprenant,
+  type UiSituationType,
+  type CompanyMode,
+  type EntreprisePartner,
+} from "../api/situations.api";
 
 const router = useRouter();
 const isLoading = ref(false);
@@ -35,16 +38,13 @@ const typeOptions: Array<{ key: UiSituationType; label: string }> = [
 ];
 
 // Partner list — populated from API when available
-const partners = ref<Array<{ id: string; nom: string }>>([]);
+const partners = ref<EntreprisePartner[]>([]);
 const isLoadingPartners = ref(false);
 
 const loadPartners = async () => {
   isLoadingPartners.value = true;
   try {
-    const { data } = await api.get("/entreprises", {
-      params: { page: 1, limit: 100 },
-    });
-    partners.value = data?.data?.items ?? [];
+    partners.value = await getEntreprises(1, 100);
   } catch (error: any) {
     const status = error?.response?.status;
     if (status === 403) {
@@ -84,7 +84,11 @@ const validateForm = () => {
   if (form.dateFin) {
     const start = new Date(form.dateDebut);
     const end = new Date(form.dateFin);
-    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end < start) {
+    if (
+      !Number.isNaN(start.getTime()) &&
+      !Number.isNaN(end.getTime()) &&
+      end < start
+    ) {
       showToast("La date de fin doit être après la date de début", "error");
       return false;
     }
@@ -106,7 +110,7 @@ const onSubmit = async () => {
     };
 
     const isPartnerMode = companyMode.value === "PARTNER";
-    const payload: Record<string, any> = {
+    const payload: Parameters<typeof createSituationForApprenant>[0] = {
       statut: statutMap[selectedType.value],
       dateDebut: form.dateDebut,
       dateFin: form.dateFin || undefined,
@@ -119,7 +123,7 @@ const onSubmit = async () => {
       payload.secteurEntrepriseLibre = form.secteurEntrepriseLibre || undefined;
       payload.adresseEntrepriseLibre = form.adresseEntrepriseLibre || undefined;
     }
-    await api.post("/apprenants/me/situations", payload);
+    await createSituationForApprenant(payload);
     showToast("Situation créée avec succès", "success");
 
     const result = await Swal.fire({
@@ -159,9 +163,8 @@ const onSubmit = async () => {
 
 const onCancel = () => router.push("/situations");
 
-
 function goToDetail(id: string) {
-  router.push(`/situations/${id}`)
+  router.push(`/situations/${id}`);
 }
 
 onMounted(() => {
@@ -172,33 +175,52 @@ onMounted(() => {
 <template>
   <ApprenantLayout title="Nouvelle situation" active-menu="situations">
     <div class="mx-auto max-w-3xl">
-
       <!-- Page hero -->
       <div class="mb-6 flex items-center justify-between">
         <div>
-          <h2 class="text-2xl font-extrabold text-slate-900">Déclarer une situation</h2>
-          <p class="mt-1 text-sm text-slate-500">Remplissez les informations concernant votre situation professionnelle</p>
+          <h2 class="text-2xl font-extrabold text-slate-900">
+            Déclarer une situation
+          </h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Remplissez les informations concernant votre situation
+            professionnelle
+          </p>
         </div>
         <button
           type="button"
           class="flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100"
           @click="onCancel"
         >
-          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" />
+          <svg
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="19" y1="12" x2="5" y2="12" />
+            <polyline points="12 19 5 12 12 5" />
           </svg>
           Retour
         </button>
       </div>
 
       <form class="space-y-5" @submit.prevent="onSubmit">
-
         <!-- ── Section 1: Type de situation ── -->
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30">1</div>
+            <div
+              class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30"
+            >
+              1
+            </div>
             <p class="text-sm font-bold text-slate-800">Type de situation</p>
-            <span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-500">Requis</span>
+            <span
+              class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-500"
+              >Requis</span
+            >
           </div>
           <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <button
@@ -215,13 +237,21 @@ onMounted(() => {
             >
               <div
                 class="flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-200"
-                :class="selectedType === opt.key ? 'bg-orange-500 shadow-lg shadow-orange-500/30' : 'bg-slate-100 group-hover:bg-orange-100'"
+                :class="
+                  selectedType === opt.key
+                    ? 'bg-orange-500 shadow-lg shadow-orange-500/30'
+                    : 'bg-slate-100 group-hover:bg-orange-100'
+                "
               >
                 <!-- Stage: briefcase -->
                 <svg
                   v-if="opt.key === 'STAGE'"
                   class="h-5 w-5 transition-colors"
-                  :class="selectedType === opt.key ? 'text-white' : 'text-slate-400 group-hover:text-orange-500'"
+                  :class="
+                    selectedType === opt.key
+                      ? 'text-white'
+                      : 'text-slate-400 group-hover:text-orange-500'
+                  "
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -236,7 +266,11 @@ onMounted(() => {
                 <svg
                   v-else-if="opt.key === 'EMPLOI'"
                   class="h-5 w-5 transition-colors"
-                  :class="selectedType === opt.key ? 'text-white' : 'text-slate-400 group-hover:text-orange-500'"
+                  :class="
+                    selectedType === opt.key
+                      ? 'text-white'
+                      : 'text-slate-400 group-hover:text-orange-500'
+                  "
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -251,7 +285,11 @@ onMounted(() => {
                 <svg
                   v-else-if="opt.key === 'ALTERNANCE'"
                   class="h-5 w-5 transition-colors"
-                  :class="selectedType === opt.key ? 'text-white' : 'text-slate-400 group-hover:text-orange-500'"
+                  :class="
+                    selectedType === opt.key
+                      ? 'text-white'
+                      : 'text-slate-400 group-hover:text-orange-500'
+                  "
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -268,7 +306,11 @@ onMounted(() => {
                 <svg
                   v-else
                   class="h-5 w-5 transition-colors"
-                  :class="selectedType === opt.key ? 'text-white' : 'text-slate-400 group-hover:text-orange-500'"
+                  :class="
+                    selectedType === opt.key
+                      ? 'text-white'
+                      : 'text-slate-400 group-hover:text-orange-500'
+                  "
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -278,12 +320,18 @@ onMounted(() => {
                 >
                   <line x1="9" y1="18" x2="15" y2="18" />
                   <line x1="10" y1="22" x2="14" y2="22" />
-                  <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+                  <path
+                    d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"
+                  />
                 </svg>
               </div>
               <span
                 class="text-xs font-bold transition-colors"
-                :class="selectedType === opt.key ? 'text-orange-600' : 'text-slate-600 group-hover:text-orange-500'"
+                :class="
+                  selectedType === opt.key
+                    ? 'text-orange-600'
+                    : 'text-slate-600 group-hover:text-orange-500'
+                "
               >
                 {{ opt.label }}
               </span>
@@ -294,9 +342,16 @@ onMounted(() => {
         <!-- ── Section 2: Entreprise ── -->
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30">2</div>
+            <div
+              class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30"
+            >
+              2
+            </div>
             <p class="text-sm font-bold text-slate-800">Entreprise</p>
-            <span class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-500">Requis</span>
+            <span
+              class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-500"
+              >Requis</span
+            >
           </div>
 
           <!-- Company mode toggle -->
@@ -314,11 +369,17 @@ onMounted(() => {
             >
               <div
                 class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all"
-                :class="companyMode === 'PARTNER' ? 'bg-orange-500 shadow-lg shadow-orange-500/30' : 'bg-slate-100'"
+                :class="
+                  companyMode === 'PARTNER'
+                    ? 'bg-orange-500 shadow-lg shadow-orange-500/30'
+                    : 'bg-slate-100'
+                "
               >
                 <svg
                   class="h-5 w-5 transition-colors"
-                  :class="companyMode === 'PARTNER' ? 'text-white' : 'text-slate-400'"
+                  :class="
+                    companyMode === 'PARTNER' ? 'text-white' : 'text-slate-400'
+                  "
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -331,8 +392,19 @@ onMounted(() => {
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-bold" :class="companyMode === 'PARTNER' ? 'text-orange-600' : 'text-slate-800'">Entreprise partenaire</p>
-                <p class="mt-0.5 text-xs text-slate-500">Sélectionner dans la liste</p>
+                <p
+                  class="text-sm font-bold"
+                  :class="
+                    companyMode === 'PARTNER'
+                      ? 'text-orange-600'
+                      : 'text-slate-800'
+                  "
+                >
+                  Entreprise partenaire
+                </p>
+                <p class="mt-0.5 text-xs text-slate-500">
+                  Sélectionner dans la liste
+                </p>
               </div>
             </button>
 
@@ -349,11 +421,17 @@ onMounted(() => {
             >
               <div
                 class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-all"
-                :class="companyMode === 'EXTERNAL' ? 'bg-orange-500 shadow-lg shadow-orange-500/30' : 'bg-slate-100'"
+                :class="
+                  companyMode === 'EXTERNAL'
+                    ? 'bg-orange-500 shadow-lg shadow-orange-500/30'
+                    : 'bg-slate-100'
+                "
               >
                 <svg
                   class="h-5 w-5 transition-colors"
-                  :class="companyMode === 'EXTERNAL' ? 'text-white' : 'text-slate-400'"
+                  :class="
+                    companyMode === 'EXTERNAL' ? 'text-white' : 'text-slate-400'
+                  "
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -366,7 +444,16 @@ onMounted(() => {
                 </svg>
               </div>
               <div>
-                <p class="text-sm font-bold" :class="companyMode === 'EXTERNAL' ? 'text-orange-600' : 'text-slate-800'">Entreprise externe</p>
+                <p
+                  class="text-sm font-bold"
+                  :class="
+                    companyMode === 'EXTERNAL'
+                      ? 'text-orange-600'
+                      : 'text-slate-800'
+                  "
+                >
+                  Entreprise externe
+                </p>
                 <p class="mt-0.5 text-xs text-slate-500">Saisir manuellement</p>
               </div>
             </button>
@@ -374,17 +461,28 @@ onMounted(() => {
 
           <!-- Partner select -->
           <div v-if="companyMode === 'PARTNER'">
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Sélectionner l'entreprise partenaire <span class="text-red-500">*</span></label>
+            <label class="mb-2 block text-sm font-semibold text-slate-700"
+              >Sélectionner l'entreprise partenaire
+              <span class="text-red-500">*</span></label
+            >
             <div class="relative">
               <select
                 v-model="form.entrepriseId"
                 class="h-11 w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 pr-10 text-sm text-slate-700 outline-none transition-colors focus:border-orange-400 focus:bg-white"
                 :disabled="isLoadingPartners"
               >
-                <option value="" v-if="isLoadingPartners">Chargement des entreprises...</option>
-                <option value="" v-else-if="partners.length === 0">Aucune entreprise disponible</option>
+                <option value="" v-if="isLoadingPartners">
+                  Chargement des entreprises...
+                </option>
+                <option value="" v-else-if="partners.length === 0">
+                  Aucune entreprise disponible
+                </option>
                 <option value="" v-else>Sélectionner une entreprise</option>
-                <option v-for="item in partners" :key="item.id" :value="item.id">
+                <option
+                  v-for="item in partners"
+                  :key="item.id"
+                  :value="item.id"
+                >
                   {{ item.nom }}
                 </option>
               </select>
@@ -405,7 +503,9 @@ onMounted(() => {
           <!-- External company fields -->
           <div v-else class="grid gap-4 sm:grid-cols-3">
             <div class="sm:col-span-3">
-              <label class="mb-2 block text-sm font-semibold text-slate-700">Nom de l'entreprise <span class="text-red-500">*</span></label>
+              <label class="mb-2 block text-sm font-semibold text-slate-700"
+                >Nom de l'entreprise <span class="text-red-500">*</span></label
+              >
               <input
                 v-model="form.nomEntrepriseLibre"
                 type="text"
@@ -414,7 +514,9 @@ onMounted(() => {
               />
             </div>
             <div>
-              <label class="mb-2 block text-sm font-semibold text-slate-700">Secteur</label>
+              <label class="mb-2 block text-sm font-semibold text-slate-700"
+                >Secteur</label
+              >
               <input
                 v-model="form.secteurEntrepriseLibre"
                 type="text"
@@ -423,7 +525,9 @@ onMounted(() => {
               />
             </div>
             <div class="sm:col-span-2">
-              <label class="mb-2 block text-sm font-semibold text-slate-700">Adresse</label>
+              <label class="mb-2 block text-sm font-semibold text-slate-700"
+                >Adresse</label
+              >
               <input
                 v-model="form.adresseEntrepriseLibre"
                 type="text"
@@ -437,12 +541,18 @@ onMounted(() => {
         <!-- ── Section 3: Période ── -->
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30">3</div>
+            <div
+              class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30"
+            >
+              3
+            </div>
             <p class="text-sm font-bold text-slate-800">Période</p>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <label class="mb-2 block text-sm font-semibold text-slate-700">Date de début <span class="text-red-500">*</span></label>
+              <label class="mb-2 block text-sm font-semibold text-slate-700"
+                >Date de début <span class="text-red-500">*</span></label
+              >
               <input
                 v-model="form.dateDebut"
                 type="date"
@@ -450,14 +560,29 @@ onMounted(() => {
               />
             </div>
             <div>
-              <label class="mb-2 block text-sm font-semibold text-slate-700">Date de fin <span class="text-slate-400 font-normal">(optionnelle)</span></label>
+              <label class="mb-2 block text-sm font-semibold text-slate-700"
+                >Date de fin
+                <span class="text-slate-400 font-normal"
+                  >(optionnelle)</span
+                ></label
+              >
               <input
                 v-model="form.dateFin"
                 type="date"
                 class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-700 outline-none transition-colors focus:border-orange-400 focus:bg-white"
               />
               <p class="mt-1.5 flex items-center gap-1 text-xs text-slate-400">
-                <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                <svg
+                  class="h-3 w-3 shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
                 Laisser vide si la situation est en cours
               </p>
             </div>
@@ -467,9 +592,16 @@ onMounted(() => {
         <!-- ── Section 4: Description ── -->
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <div class="mb-5 flex items-center gap-3">
-            <div class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30">4</div>
+            <div
+              class="flex h-7 w-7 items-center justify-center rounded-full bg-orange-500 text-xs font-bold text-white shadow-md shadow-orange-500/30"
+            >
+              4
+            </div>
             <p class="text-sm font-bold text-slate-800">Description</p>
-            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Optionnelle</span>
+            <span
+              class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"
+              >Optionnelle</span
+            >
           </div>
           <textarea
             v-model="form.commentaire"
@@ -478,7 +610,17 @@ onMounted(() => {
             class="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-colors focus:border-orange-400 focus:bg-white"
           />
           <p class="mt-1.5 flex items-center gap-1 text-xs text-slate-400">
-            <svg class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+            <svg
+              class="h-3 w-3 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
             Vous pouvez ajouter des détails complémentaires si nécessaire
           </p>
         </div>
@@ -507,13 +649,31 @@ onMounted(() => {
               stroke-linecap="round"
               stroke-linejoin="round"
             >
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+              <path
+                d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+              />
               <polyline points="17 21 17 13 7 13 7 21" />
               <polyline points="7 3 7 8 15 8" />
             </svg>
-            <svg v-else class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            <svg
+              v-else
+              class="h-4 w-4 animate-spin"
+              viewBox="0 0 24 24"
+              fill="none"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              />
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             {{ isLoading ? "Enregistrement..." : "Enregistrer la situation" }}
           </button>

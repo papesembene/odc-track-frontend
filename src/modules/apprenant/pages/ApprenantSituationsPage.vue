@@ -3,41 +3,8 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useRouter } from 'vue-router'
 import ApprenantLayout from '../../../shared/layouts/ApprenantLayout.vue'
-import { api } from '../../../core/api/axios'
+import { getMesSituations, formatDate, mapToSituationItem, type SituationApi, type UiType, type UiStatus, type SituationItem } from '../api/situations.api'
 import { showToast } from '../../../core/ui/toast'
-type UiType = 'Stage' | 'Emploi' | 'Alternance' | 'Projet'
-type UiStatus = 'En cours' | 'En attente' | 'Validée' | 'Rejetée'
-
-type SituationItem = {
-  id: string
-  type: UiType
-  status: UiStatus
-  entreprise: string
-  isExternal: boolean
-  secteur?: string
-  adresse?: string
-  description: string
-  dateDebut: string
-  dateFin?: string
-  feedback?: string
-}
-
-type SituationApi = {
-  id: string;
-  statut: "RECHERCHE_EMPLOI" | "EN_STAGE" | "EN_EMPLOI" | "PROJET_PERSO" | "POURSUITE_ETUDES";
-  valide: boolean;
-  dateDebut: string;
-  dateFin: string | null;
-  commentaire: string | null;
-  entreprise?: {
-    nom?: string | null;
-    secteur?: string | null;
-    adresse?: string | null;
-  } | null;
-  nomEntrepriseLibre?: string | null;
-  secteurEntrepriseLibre?: string | null;
-  adresseEntrepriseLibre?: string | null;
-};
 
 const apiSituations = ref<SituationApi[]>([]);
 const isLoading = ref(false);
@@ -45,8 +12,8 @@ const isLoading = ref(false);
 const loadSituations = async () => {
   isLoading.value = true
   try {
-    const { data } = await api.get('/apprenants/me/situations')
-    apiSituations.value = data?.data ?? []
+    const data = await getMesSituations()
+    apiSituations.value = data
   } catch (error: any) {
     const apiMessage = error?.response?.data?.message
     const message = Array.isArray(apiMessage)
@@ -85,18 +52,6 @@ onMounted(loadSituations);
 const search = ref('')
 const selectedType = ref<'Tous' | UiType>('Tous')
 const selectedStatus = ref<'Tous statuts' | UiStatus>('Tous statuts')
-
-const formatDate = (value?: string | null) => {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('fr-FR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
-
 
 
 

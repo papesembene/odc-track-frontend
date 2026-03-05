@@ -9,6 +9,8 @@ import ApprenantsListPage from '@/modules/pole-emploi/pages/ApprenantsListPage.v
 import ApprenantDetailPage from '@/modules/pole-emploi/pages/ApprenantDetailPage.vue'
 import PoleEmploiStatistiquesPage from '@/modules/pole-emploi/pages/PoleEmploiStatistiquesPage.vue'
 import PlaceholderBackofficePage from '@/modules/pole-emploi/pages/PlaceholderBackofficePage.vue'
+import EntreprisesPage from '@/modules/pole-emploi/pages/EntreprisesPage.vue'
+import ImportApprenantsPage from '@/modules/pole-emploi/pages/ImportApprenantsPage.vue'
 
 import ApprenantDashboardPage from '@/modules/apprenant/pages/ApprenantDashboardPage.vue'
 import ApprenantSituationsPage from '@/modules/apprenant/pages/ApprenantSituationsPage.vue'
@@ -34,6 +36,8 @@ const router = createRouter({
     { path: '/apprenants', name: 'apprenants', component: ApprenantsListPage },
     { path: '/apprenants/:id', name: 'apprenant-detail', component: ApprenantDetailPage },
     { path: '/statistiques', name: 'statistiques', component: PoleEmploiStatistiquesPage },
+    { path: '/entreprises', name: 'entreprises', component: EntreprisesPage },
+    { path: '/import-apprenants', name: 'import-apprenants', component: ImportApprenantsPage },
     {
       path: '/parametres',
       name: 'parametres',
