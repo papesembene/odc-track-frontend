@@ -2,11 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
-import { getActivePromotion } from '@/modules/manager/api/promotions.api'
+import { getActivePromotion, type PromotionItem } from '@/modules/manager/api/promotions.api'
 
 // ── Data from API ──
 const statsData = ref<StatistiquesGlobales | null>(null)
-const activePromotion = ref<{ nom: string; annee: number } | null>(null)
+const activePromotion = ref<PromotionItem | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -200,7 +200,7 @@ const promotions = computed(() => {
   
   return statsData.value.parPromotion.map(p => {
     const taux = p.total > 0 ? Math.round((p.enEmploi / p.total) * 100) : 0
-    const isActivePromotion = activePromotion.value?.nom === p.promotionNom
+    const isActivePromotion = activePromotion.value?.id === p.promotionId
     const statusClass = isActivePromotion
       ? 'border-emerald-400 text-emerald-600 bg-emerald-50'
       : 'border-slate-200 text-slate-500 bg-slate-50'

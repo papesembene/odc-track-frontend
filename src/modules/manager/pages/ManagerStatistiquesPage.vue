@@ -2,13 +2,13 @@
 import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
-import { getActivePromotion } from '@/modules/manager/api/promotions.api'
+import { getActivePromotion, type PromotionItem } from '@/modules/manager/api/promotions.api'
 
 type Segment = { label: string; value: number; color: string; bg: string }
 
 // État
 const stats = ref<StatistiquesGlobales | null>(null)
-const activePromotion = ref<{ nom: string; annee: number } | null>(null)
+const activePromotion = ref<PromotionItem | null>(null)
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 
