@@ -25,28 +25,6 @@ const loadSituations = async () => {
   }
 }
 
-
-const mapType = (statut: SituationApi['statut']): UiType => {
-  if (statut === 'EN_STAGE') return 'Stage'
-  if (statut === 'EN_EMPLOI') return 'Emploi'
-  if (statut === 'PROJET_PERSO') return 'Projet'
-  if (statut === 'POURSUITE_ETUDES') return 'Alternance'
-  return 'Emploi'
-}
-
-const mapStatus = (item: SituationApi): UiStatus => {
-  if (item.valide) return 'Validée'
-
-  if (!item.dateFin) return 'En cours'
-  const endDate = new Date(item.dateFin)
-  const today = new Date()
-  if (!Number.isNaN(endDate.getTime()) && endDate >= today) return 'En cours'
-
-  return 'En attente'
-}
-
-
-
 onMounted(loadSituations);
 
 const search = ref('')
@@ -57,19 +35,11 @@ const selectedStatus = ref<'Tous statuts' | UiStatus>('Tous statuts')
 
 const situations = computed<SituationItem[]>(() =>
   apiSituations.value.map((item) => {
-    const isExternal = Boolean(item.nomEntrepriseLibre)
+    const mapped = mapToSituationItem(item)
     return {
-      id: item.id,
-      type: mapType(item.statut),
-      status: mapStatus(item),
-      entreprise: item.entreprise?.nom || item.nomEntrepriseLibre || '—',
-      isExternal,
-      secteur: item.entreprise?.secteur || item.secteurEntrepriseLibre || undefined,
-      adresse: item.entreprise?.adresse || item.adresseEntrepriseLibre || undefined,
-      description: item.commentaire || 'Aucune description',
+      ...mapped,
       dateDebut: formatDate(item.dateDebut),
       dateFin: formatDate(item.dateFin) || undefined,
-      feedback: item.valide ? 'Situation validée' : undefined,
     }
   }),
 )

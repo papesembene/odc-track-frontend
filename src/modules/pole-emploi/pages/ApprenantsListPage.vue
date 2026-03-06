@@ -2,9 +2,12 @@
 import { ref, computed, onMounted } from "vue";
 import { RouterLink } from "vue-router";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
-import { getApprenants, type ApprenantListItem } from "../api/apprenants.api";
+import { getApprenants } from "../api/apprenants.api";
 import { getPromotions, getReferentiels } from "../api/situations.api";
-import { getStatistiques, type StatistiquesGlobales } from "../api/statistiques.api";
+import {
+  getStatistiques,
+  type StatistiquesGlobales,
+} from "../api/statistiques.api";
 import { showToast } from "../../../core/ui/toast";
 
 /**
@@ -151,7 +154,11 @@ async function loadApprenants() {
  */
 async function loadGlobalStats() {
   try {
-    globalStats.value = await getStatistiques();
+    globalStats.value = await getStatistiques({
+      includePromotions: false,
+      includeReferentiels: false,
+      includeSituationsRecentes: false,
+    });
   } catch (error) {
     console.error("Erreur chargement statistiques:", error);
   }
@@ -182,13 +189,6 @@ const filtered = computed(() => {
     return true;
   });
 });
-
-const totalPending = computed(() =>
-  rows.value.reduce((acc, r) => acc + r.pendingCount, 0),
-);
-const totalValidees = computed(() =>
-  rows.value.reduce((acc, r) => acc + r.valideesCount, 0),
-);
 
 /**
  * Change page

@@ -90,10 +90,6 @@ const filteredDocuments = computed(() => {
 /**
  * Computed: whether to show the documents tab
  */
-const showDocumentsTab = computed(() => {
-  return filteredDocuments.value.length > 0;
-});
-
 /**
  * Charge les documents depuis l'API
  */
@@ -146,7 +142,7 @@ function validateSituation(id: string) {
   }
 }
 
-function rejectSituation(id: string) {
+function rejectSituation(_id: string) {
   showToast("Fonctionnalité en cours de développement", "info");
 }
 
@@ -393,7 +389,7 @@ onMounted(() => {
                     </span>
                   </div>
                   <p class="mt-0.5 text-sm font-medium text-slate-600">
-                    {{ sit.entreprise?.nom || '—' }}
+                    {{ sit.entreprise || '—' }}
                   </p>
                 </div>
               </div>

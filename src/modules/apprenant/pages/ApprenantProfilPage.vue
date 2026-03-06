@@ -58,8 +58,6 @@ import { changePassword } from "../../auth/api/change-password.api";
 import {
   getApprenantMe,
   updateApprenantMe,
-  type ApprenantMe,
-  type ApprenantMeInput,
 } from "../api/profil.api";
 
 type ApiMe = {

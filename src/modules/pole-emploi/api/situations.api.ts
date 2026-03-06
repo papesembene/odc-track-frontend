@@ -1,29 +1,63 @@
 import { api } from "../../../core/api/axios";
 import { extractItems } from "./helpers";
 
+type PromotionOption = {
+  id: string;
+  nom: string;
+  createdAt?: string;
+};
+
+type ReferentielOption = {
+  id: string;
+  nom: string;
+  createdAt?: string;
+};
+
+type PendingSituation = {
+  id: string;
+  statut: string;
+  dateDebut: string;
+  dateFin: string | null;
+  createdAt: string;
+  nomEntrepriseLibre?: string | null;
+  entreprise?: { nom?: string | null } | null;
+  apprenant: {
+    user: {
+      nom: string;
+      prenom: string;
+    };
+    promotion: {
+      nom: string;
+    };
+    referentiel: {
+      nom: string;
+    };
+  };
+};
+
 /**
  * Récupère la liste des situations professionnelles en attente de validation.
  * @returns Tableau de situations en attente
  */
-export async function getSituationsEnAttente() {
+export async function getSituationsEnAttente(): Promise<PendingSituation[]> {
   const res = await api.get("/situations/attentes");
-  return extractItems(res);
+  return extractItems<PendingSituation>(res);
 }
 
 /**
  * Récupère la liste de toutes les promotions.
  * @returns Tableau de promotions
  */
-export async function getPromotions() {
+export async function getPromotions(): Promise<PromotionOption[]> {
   const res = await api.get("/promotions");
-  return extractItems(res);
+  return extractItems<PromotionOption>(res);
 }
 
 /**
  * Récupère la liste de tous les référentiels.
  * @returns Tableau de référentiels
  */
-export async function getReferentiels() {
+export async function getReferentiels(): Promise<ReferentielOption[]> {
   const res = await api.get("/referentiels");
-  return extractItems(res);
+  return extractItems<ReferentielOption>(res);
 }

@@ -4,7 +4,6 @@ import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import {
   getStatistiques,
   type StatistiquesGlobales,
-  type ParStatut,
 } from "../api/statistiques.api";
 import { showToast } from "../../../core/ui/toast";
 
@@ -18,13 +17,6 @@ const isLoading = ref(false);
 const statutSegments = computed<Segment[]>(() => {
   if (!stats.value) return [];
   const s = stats.value.parStatut;
-  const total =
-    s.EN_EMPLOI +
-    s.EN_STAGE +
-    s.RECHERCHE_EMPLOI +
-    s.PROJET_PERSO +
-    s.POURSUITE_ETUDES;
-
   return [
     {
       label: "Validées",
@@ -83,7 +75,11 @@ const pct = (value: number, total: number) =>
 async function loadStats() {
   isLoading.value = true;
   try {
-    const data = await getStatistiques();
+    const data = await getStatistiques({
+      includePromotions: true,
+      includeReferentiels: true,
+      includeSituationsRecentes: false,
+    });
     stats.value = data;
   } catch (error: any) {
     showToast(

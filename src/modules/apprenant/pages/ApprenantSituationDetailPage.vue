@@ -6,7 +6,6 @@ import { showToast } from "../../../core/ui/toast";
 import {
   getSituationById,
   getSituationDocuments,
-  formatDate,
   type SituationApi,
   type DocumentApi,
 } from "../api/situations.api";

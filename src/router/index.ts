@@ -1,29 +1,32 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { tokenStorage } from '@/core/auth/token-storage'
 import { getDefaultPathByRole } from '@/core/auth/role-redirect'
-import LoginPage from '@/modules/auth/pages/LoginPage.vue'
 
-import PoleEmploiDashboardPage from '@/modules/pole-emploi/pages/PoleEmploiDashboardPage.vue'
-import ValidationsPage from '@/modules/pole-emploi/pages/ValidationsPage.vue'
-import ApprenantsListPage from '@/modules/pole-emploi/pages/ApprenantsListPage.vue'
-import ApprenantDetailPage from '@/modules/pole-emploi/pages/ApprenantDetailPage.vue'
-import PoleEmploiStatistiquesPage from '@/modules/pole-emploi/pages/PoleEmploiStatistiquesPage.vue'
-import PlaceholderBackofficePage from '@/modules/pole-emploi/pages/PlaceholderBackofficePage.vue'
-import EntreprisesPage from '@/modules/pole-emploi/pages/EntreprisesPage.vue'
-import ImportApprenantsPage from '@/modules/pole-emploi/pages/ImportApprenantsPage.vue'
-
-import ApprenantDashboardPage from '@/modules/apprenant/pages/ApprenantDashboardPage.vue'
-import ApprenantSituationsPage from '@/modules/apprenant/pages/ApprenantSituationsPage.vue'
-import ApprenantNewSituationPage from '@/modules/apprenant/pages/ApprenantNewSituationPage.vue'
-import ApprenantSituationDetailPage from '@/modules/apprenant/pages/ApprenantSituationDetailPage.vue'
-import ApprenantDocumentsPage from '@/modules/apprenant/pages/ApprenantDocumentsPage.vue'
-import ApprenantProfilPage from '@/modules/apprenant/pages/ApprenantProfilPage.vue'
-import ManagerDashboardPage from '@/modules/manager/pages/ManagerDashboardPage.vue'
-import ManagerApprenantsPage from '@/modules/manager/pages/ManagerApprenantsPage.vue'
-import CoachDashboardPage from '@/modules/coach/pages/CoachDashboardPage.vue'
-import CoachApprenantsPage from '@/modules/coach/pages/CoachApprenantsPage.vue'
-import CoachApprenantDetailPage from '@/modules/coach/pages/CoachApprenantDetailPage.vue'
-import CoachStatistiquesPage from '@/modules/coach/pages/CoachStatistiquesPage.vue'
+const LoginPage = () => import('@/modules/auth/pages/LoginPage.vue')
+const PoleEmploiDashboardPage = () => import('@/modules/pole-emploi/pages/PoleEmploiDashboardPage.vue')
+const ValidationsPage = () => import('@/modules/pole-emploi/pages/ValidationsPage.vue')
+const ApprenantsListPage = () => import('@/modules/pole-emploi/pages/ApprenantsListPage.vue')
+const ApprenantDetailPage = () => import('@/modules/pole-emploi/pages/ApprenantDetailPage.vue')
+const PoleEmploiStatistiquesPage = () => import('@/modules/pole-emploi/pages/PoleEmploiStatistiquesPage.vue')
+const PlaceholderBackofficePage = () => import('@/modules/pole-emploi/pages/PlaceholderBackofficePage.vue')
+const EntreprisesPage = () => import('@/modules/pole-emploi/pages/EntreprisesPage.vue')
+const ImportApprenantsPage = () => import('@/modules/pole-emploi/pages/ImportApprenantsPage.vue')
+const ApprenantDashboardPage = () => import('@/modules/apprenant/pages/ApprenantDashboardPage.vue')
+const ApprenantSituationsPage = () => import('@/modules/apprenant/pages/ApprenantSituationsPage.vue')
+const ApprenantNewSituationPage = () => import('@/modules/apprenant/pages/ApprenantNewSituationPage.vue')
+const ApprenantSituationDetailPage = () => import('@/modules/apprenant/pages/ApprenantSituationDetailPage.vue')
+const ApprenantDocumentsPage = () => import('@/modules/apprenant/pages/ApprenantDocumentsPage.vue')
+const ApprenantProfilPage = () => import('@/modules/apprenant/pages/ApprenantProfilPage.vue')
+const ManagerDashboardPage = () => import('@/modules/manager/pages/ManagerDashboardPage.vue')
+const ManagerApprenantsPage = () => import('@/modules/manager/pages/ManagerApprenantsPage.vue')
+const ManagerCoachesPage = () => import('@/modules/manager/pages/ManagerCoachesPage.vue')
+const ManagerApprenantDetailPage = () => import('@/modules/manager/pages/ManagerApprenantDetailPage.vue')
+const ManagerPromotionsPage = () => import('@/modules/manager/pages/ManagerPromotionsPage.vue')
+const ManagerStatistiquesPage = () => import('@/modules/manager/pages/ManagerStatistiquesPage.vue')
+const CoachDashboardPage = () => import('@/modules/coach/pages/CoachDashboardPage.vue')
+const CoachApprenantsPage = () => import('@/modules/coach/pages/CoachApprenantsPage.vue')
+const CoachApprenantDetailPage = () => import('@/modules/coach/pages/CoachApprenantDetailPage.vue')
+const CoachStatistiquesPage = () => import('@/modules/coach/pages/CoachStatistiquesPage.vue')
 
 const router = createRouter({
   history: createWebHistory(),
@@ -73,6 +76,10 @@ const router = createRouter({
     // Manager (UI flow)
     { path: '/dashboard-manager', name: 'dashboard-manager', component: ManagerDashboardPage },
     { path: '/manager/apprenants', name: 'manager-apprenants', component: ManagerApprenantsPage },
+    { path: '/manager/apprenants/:id', name: 'manager-apprenant-detail', component: ManagerApprenantDetailPage },
+    { path: '/manager/coaches', name: 'manager-coaches', component: ManagerCoachesPage },
+    { path: '/manager/promotions', name: 'manager-promotions', component: ManagerPromotionsPage },
+    { path: '/manager/statistiques', name: 'manager-statistiques', component: ManagerStatistiquesPage },
 
     // Coach (UI flow)
     { path: '/coach/dashboard', name: 'coach-dashboard', component: CoachDashboardPage },

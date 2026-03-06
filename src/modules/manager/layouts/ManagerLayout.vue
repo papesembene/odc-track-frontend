@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
+import { useCurrentUser } from '@/core/auth/useCurrentUser'
 
-type ManagerMenuKey = 'dashboard' | 'apprenants' | 'coaches' | 'statistiques'
+type ManagerMenuKey = 'dashboard' | 'apprenants' | 'coaches' | 'promotions' | 'statistiques'
 
 const props = defineProps<{
   title: string
@@ -11,10 +12,44 @@ const props = defineProps<{
 
 const mobileOpen = ref(false)
 
+// ── Current user ──
+const { user, userName, role, hydrateCurrentUser } = useCurrentUser()
+
+// Hydrate user on mount
+onMounted(() => {
+  hydrateCurrentUser()
+})
+
+// Computed role display
+const roleLabel = computed(() => {
+  const r = role.value?.toUpperCase()
+  switch (r) {
+    case 'MANAGER': return 'Manager'
+    case 'POLE_EMPLOI': return 'Pôle Emploi'
+    case 'ADMIN': return 'Administrateur'
+    case 'COACH': return 'Coach'
+    case 'APPRENANT': return 'Apprenant'
+    default: return r || 'Utilisateur'
+  }
+})
+
+// User initials
+const userInitials = computed(() => {
+  const prenom = user.value.prenom
+  const nom = user.value.nom
+  if (prenom || nom) {
+    return `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase()
+  }
+  // Fallback to first letter of name or email
+  const name = userName.value
+  return name?.[0]?.toUpperCase() || '?'
+})
+
 const menu: Array<{ key: ManagerMenuKey; label: string; to: string }> = [
   { key: 'dashboard',    label: 'Tableau de bord', to: '/dashboard-manager' },
   { key: 'apprenants',  label: 'Apprenants',       to: '/manager/apprenants' },
   { key: 'coaches',     label: 'Coaches',           to: '/manager/coaches' },
+  { key: 'promotions',  label: 'Promotions',        to: '/manager/promotions' },
   { key: 'statistiques',label: 'Statistiques',      to: '/manager/statistiques' },
 ]
 
@@ -72,6 +107,13 @@ const linkClass = (key: ManagerMenuKey) => {
               <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
               <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
             </svg>
+            <!-- Promotions -->
+            <svg v-else-if="item.key === 'promotions'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
             <!-- Statistiques -->
             <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="20" x2="18" y2="10"/>
@@ -127,10 +169,12 @@ const linkClass = (key: ManagerMenuKey) => {
             </button>
             <div class="hidden h-6 w-px bg-slate-200 lg:block"></div>
             <div class="hidden text-right lg:block">
-              <p class="text-sm font-semibold text-slate-900">Cheikh Tidiane Mbaye</p>
-              <p class="text-xs text-slate-500">Manager</p>
+              <p class="text-sm font-semibold text-slate-900">{{ userName }}</p>
+              <p class="text-xs text-slate-500">{{ roleLabel }}</p>
             </div>
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">C</div>
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
+              {{ userInitials }}
+            </div>
           </div>
         </header>
 

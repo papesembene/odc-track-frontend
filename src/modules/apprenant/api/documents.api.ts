@@ -2,6 +2,7 @@
  * API pour les documents (apprenant)
  */
 import { api } from "@/core/api/axios";
+import { extractApiData, extractApiItems } from "@/core/api/response";
 
 // ============================================
 // TYPES
@@ -33,16 +34,16 @@ export interface SituationApi {
 
 /** Récupère les situations avec leurs documents */
 export async function getSituationsAvecDocuments(): Promise<SituationApi[]> {
-  const { data } = await api.get("/apprenants/me/situations");
-  return data?.data ?? [];
+  const res = await api.get("/apprenants/me/situations");
+  return extractApiItems<SituationApi>(res);
 }
 
 /** Récupère le chemin du fichier pour un document */
 export async function getDocumentPath(
   documentId: string,
 ): Promise<string | undefined> {
-  const { data } = await api.get(`/documents/${documentId}`);
-  return data?.data?.fichier as string | undefined;
+  const res = await api.get(`/documents/${documentId}`);
+  return extractApiData<{ fichier?: string }>(res)?.fichier;
 }
 
 /** Supprime un document */
@@ -57,14 +58,15 @@ export async function uploadDocument(
   file: File,
 ): Promise<DocumentApi> {
   const formData = new FormData();
-  formData.append("fichier", file);
+  // L'endpoint apprenant attend le champ multipart "file".
+  formData.append("file", file);
   formData.append("type", type);
   formData.append("situationId", situationId);
 
-  const { data } = await api.post("/documents", formData, {
+  const res = await api.post("/apprenants/me/documents", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  return data.data;
+  return extractApiData<DocumentApi>(res) as DocumentApi;
 }
 
 // ============================================

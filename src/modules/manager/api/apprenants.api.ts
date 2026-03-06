@@ -1,5 +1,16 @@
-import { api } from "../../../core/api/axios";
-import { extractItems } from "./helpers";
+/**
+ * API pour les apprenants (Manager)
+ */
+import { api } from "@/core/api/axios";
+import {
+  extractApiData,
+  extractApiItems,
+  extractApiPagination,
+} from "@/core/api/response";
+
+// ============================================
+// TYPES
+// ============================================
 
 /**
  * Type représentant un apprenant dans la liste.
@@ -25,6 +36,9 @@ export type ApprenantListItem = {
   _count?: {
     situations: number;
   };
+  situations?: {
+    valide: boolean;
+  }[];
 };
 
 /**
@@ -49,39 +63,6 @@ export interface ApprenantsQueryParams {
   search?: string;
   promotionId?: string;
   referentielId?: string;
-}
-
-/**
- * Récupère la liste paginée des apprenants.
- *
- * @param query - Paramètres de pagination et filtres
- * @returns Promesse avec les apprenants et infos de pagination
- */
-export async function getApprenants(
-  query?: ApprenantsQueryParams,
-): Promise<ApprenantsPagination> {
-  const params = new URLSearchParams();
-  if (query?.page) params.append("page", String(query.page));
-  if (query?.limit) params.append("limit", String(query.limit));
-  if (query?.search) params.append("search", query.search);
-  if (query?.promotionId) params.append("promotionId", query.promotionId);
-  if (query?.referentielId) params.append("referentielId", query.referentielId);
-
-  const queryString = params.toString();
-  const url = queryString ? `/apprenants?${queryString}` : "/apprenants";
-
-  const res = await api.get(url);
-  const items = extractItems<ApprenantListItem>(res);
-
-  // Extraire la pagination depuis la réponse
-  const pagination = res?.data?.data?.pagination || {
-    page: 1,
-    limit: 10,
-    totalItems: items.length,
-    totalPages: 1,
-  };
-
-  return { items, pagination };
 }
 
 /**
@@ -124,6 +105,36 @@ export type ApprenantDetail = {
   situations: SituationItem[];
 };
 
+// ============================================
+// API
+// ============================================
+
+/**
+ * Récupère la liste paginée des apprenants.
+ *
+ * @param query - Paramètres de pagination et filtres
+ * @returns Promesse avec les apprenants et infos de pagination
+ */
+export async function getApprenants(
+  query?: ApprenantsQueryParams,
+): Promise<ApprenantsPagination> {
+  const params = new URLSearchParams();
+  if (query?.page) params.append("page", String(query.page));
+  if (query?.limit) params.append("limit", String(query.limit));
+  if (query?.search) params.append("search", query.search);
+  if (query?.promotionId) params.append("promotionId", query.promotionId);
+  if (query?.referentielId) params.append("referentielId", query.referentielId);
+
+  const queryString = params.toString();
+  const url = queryString ? `/apprenants?${queryString}` : "/apprenants";
+
+  const res = await api.get(url);
+  const items = extractApiItems<ApprenantListItem>(res);
+  const pagination = extractApiPagination(res);
+
+  return { items, pagination };
+}
+
 /**
  * Récupère le détail d'un apprenant par son ID.
  *
@@ -134,5 +145,5 @@ export async function getApprenantById(
   id: string,
 ): Promise<ApprenantDetail | null> {
   const res = await api.get(`/apprenants/${id}`);
-  return res?.data?.data || null;
+  return extractApiData<ApprenantDetail | null>(res);
 }

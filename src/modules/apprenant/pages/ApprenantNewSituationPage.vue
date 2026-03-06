@@ -163,10 +163,6 @@ const onSubmit = async () => {
 
 const onCancel = () => router.push("/situations");
 
-function goToDetail(id: string) {
-  router.push(`/situations/${id}`);
-}
-
 onMounted(() => {
   loadPartners();
 });

@@ -2,6 +2,7 @@
  * API pour les situations professionnelles (apprenant)
  */
 import { api } from "@/core/api/axios";
+import { extractApiData, extractApiItems } from "@/core/api/response";
 
 // ============================================
 // TYPES
@@ -55,43 +56,8 @@ export interface SituationItem {
 
 /** Récupère les situations de l'apprenant connecté */
 export async function getMesSituations(): Promise<SituationApi[]> {
-  const { data } = await api.get("/apprenants/me/situations");
-  return data?.data ?? [];
-}
-
-/** Crée une nouvelle situation */
-export async function createSituation(situation: {
-  statut: SituationStatut;
-  dateDebut: string;
-  dateFin?: string;
-  commentaire?: string;
-  entrepriseId?: string;
-  nomEntrepriseLibre?: string;
-  secteurEntrepriseLibre?: string;
-  adresseEntrepriseLibre?: string;
-}): Promise<SituationApi> {
-  const { data } = await api.post("/situations", situation);
-  return data.data;
-}
-
-/** Met à jour une situation */
-export async function updateSituation(
-  id: string,
-  situation: Partial<{
-    statut: SituationStatut;
-    dateDebut: string;
-    dateFin: string;
-    commentaire: string;
-    entrepriseId: string;
-  }>,
-): Promise<SituationApi> {
-  const { data } = await api.patch(`/situations/${id}`, situation);
-  return data.data;
-}
-
-/** Supprime une situation */
-export async function deleteSituation(id: string): Promise<void> {
-  await api.delete(`/situations/${id}`);
+  const res = await api.get("/apprenants/me/situations");
+  return extractApiItems<SituationApi>(res);
 }
 
 // ============================================
@@ -197,22 +163,22 @@ export async function createSituationForApprenant(payload: {
   secteurEntrepriseLibre?: string;
   adresseEntrepriseLibre?: string;
 }): Promise<SituationApi> {
-  const { data } = await api.post("/apprenants/me/situations", payload);
-  return data.data;
+  const res = await api.post("/apprenants/me/situations", payload);
+  return extractApiData<SituationApi>(res) as SituationApi;
 }
 
 /** Récupère le détail d'une situation par ID */
 export async function getSituationById(
   id: string,
 ): Promise<SituationApi | null> {
-  const { data } = await api.get(`/situations/${id}`);
-  return data?.data ?? null;
+  const res = await api.get(`/situations/${id}`);
+  return extractApiData<SituationApi | null>(res);
 }
 
 /** Récupère les documents d'une situation */
 export async function getSituationDocuments(
   situationId: string,
 ): Promise<DocumentApi[]> {
-  const { data } = await api.get(`/situations/${situationId}/documents`);
-  return data?.data ?? [];
+  const res = await api.get(`/situations/${situationId}/documents`);
+  return extractApiItems<DocumentApi>(res);
 }

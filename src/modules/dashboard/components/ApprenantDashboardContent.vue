@@ -2,21 +2,16 @@
 import { RouterLink } from 'vue-router'
 import StatCard  from '../../dashboard/components/StatCard.vue'
 import { computed, onMounted, ref } from "vue";
-import { api } from "../../../core/api/axios";
 import { showToast } from "../../../core/ui/toast";
 import { useCurrentUser } from '../../../core/auth/useCurrentUser'
-type SituationApi = {
-  id: string;
-  statut: "RECHERCHE_EMPLOI" | "EN_STAGE" | "EN_EMPLOI" | "PROJET_PERSO" | "POURSUITE_ETUDES";
-  valide: boolean;
-  dateDebut: string;
-  dateFin: string | null;
-  commentaire: string | null;
-  entreprise?: { nom?: string | null } | null;
-  nomEntrepriseLibre?: string | null;
-};
-
-type UiStatus = "Validée" | "En cours" | "En attente";
+import {
+  formatDate,
+  getMesSituations,
+  mapStatus,
+  mapType,
+  type SituationApi,
+  type UiStatus,
+} from "../../apprenant/api/situations.api";
 
 type RecentSituation = {
   id: string;
@@ -31,34 +26,14 @@ type RecentSituation = {
 
 const situations = ref<SituationApi[]>([]);
 const isLoading = ref(false);
-const formatDate = (value?: string | null) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString("fr-FR");
-};
 
-const mapStatutLabel = (statut: SituationApi["statut"]) => {
-  if (statut === "EN_STAGE") return "Stage";
-  if (statut === "EN_EMPLOI") return "Emploi";
-  if (statut === "PROJET_PERSO") return "Projet";
-  if (statut === "POURSUITE_ETUDES") return "Alternance";
-  return "Recherche emploi";
-};
+const getUiStatus = (item: SituationApi): UiStatus => mapStatus(item);
 
-const getUiStatus = (item: SituationApi): UiStatus => {
-  if (item.valide) return "Validée";
-  if (!item.dateFin) return "En cours";
-
-  const today = new Date();
-  const endDate = new Date(item.dateFin);
-  if (!Number.isNaN(endDate.getTime()) && endDate >= today) return "En cours";
-  return "En attente";
-};
 const statusClassByStatus: Record<UiStatus, string> = {
   Validée: "bg-emerald-100 text-emerald-700",
   "En cours": "bg-blue-100 text-blue-700",
   "En attente": "bg-amber-100 text-amber-700",
+  Rejetée: "bg-red-100 text-red-700",
 };
 
 const stats = computed(() => {
@@ -75,7 +50,7 @@ const recentSituations = computed<RecentSituation[]>(() =>
     const status = getUiStatus(item);
     return {
       id: item.id,
-      title: mapStatutLabel(item.statut),
+      title: mapType(item.statut),
       status,
       statusClass: statusClassByStatus[status],
       company: item.entreprise?.nom || item.nomEntrepriseLibre || "—",
@@ -88,8 +63,7 @@ const recentSituations = computed<RecentSituation[]>(() =>
 const loadSituations = async () => {
   isLoading.value = true;
   try {
-    const { data } = await api.get("/apprenants/me/situations");
-    situations.value = data?.data ?? [];
+    situations.value = await getMesSituations();
   } catch (error: any) {
     const apiMessage = error?.response?.data?.message;
     const message = Array.isArray(apiMessage)

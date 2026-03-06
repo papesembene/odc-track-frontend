@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import { getPromotions, getReferentiels } from "../api/situations.api";
 import { showToast } from "../../../core/ui/toast";
 import { confirm } from "../../../core/ui/sweet-alert";
+import Swal from "sweetalert2";
 
 /**
  * Types
@@ -12,13 +12,13 @@ import { confirm } from "../../../core/ui/sweet-alert";
 interface Promotion {
   id: string;
   nom: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 interface Referentiel {
   id: string;
   nom: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 interface ImportResult {
@@ -31,7 +31,6 @@ interface ImportResult {
 /**
  * État
  */
-const router = useRouter();
 const importType = ref<"promotion" | "referentiel">("promotion");
 const selectedPromotionId = ref("");
 const selectedReferentielId = ref("");
@@ -54,8 +53,6 @@ const canImport = computed(() => {
     return false;
   return true;
 });
-
-const allowedFormats = computed(() => [".csv", ".xlsx", ".xls"]);
 
 /**
  * Charge les promotions et référentiels
@@ -188,35 +185,30 @@ async function handleImport() {
           ? `<br><em>...et ${result.errors.length - 10} autres erreurs</em>`
           : "";
 
-      await import("sweetalert2").then((Sweetalert2) => {
-        Sweetalert2.default.fire({
-          icon: "warning",
-          title: "Import terminé avec erreurs",
-          html: `
-            <div style="text-align: left; font-size: 14px;">
-              <p><strong>Importés:</strong> ${result.createdCount}</p>
-              <p><strong>Erreurs:</strong> ${result.errors.length}</p>
-              <hr style="margin: 10px 0;">
-              <p><strong>Détails des erreurs:</strong></p>
-              <div style="max-height: 200px; overflow-y: auto; background: #fef2f2; padding: 10px; border-radius: 5px;">
-                ${errorsHtml}${moreErrors}
-              </div>
+      await Swal.fire({
+        icon: "warning",
+        title: "Import terminé avec erreurs",
+        html: `
+          <div style="text-align: left; font-size: 14px;">
+            <p><strong>Importés:</strong> ${result.createdCount}</p>
+            <p><strong>Erreurs:</strong> ${result.errors.length}</p>
+            <hr style="margin: 10px 0;">
+            <p><strong>Détails des erreurs:</strong></p>
+            <div style="max-height: 200px; overflow-y: auto; background: #fef2f2; padding: 10px; border-radius: 5px;">
+              ${errorsHtml}${moreErrors}
             </div>
-          `,
-          confirmButtonText: "OK",
-          confirmButtonColor: "#f97316",
-        });
+          </div>
+        `,
+        confirmButtonText: "OK",
+        confirmButtonColor: "#f97316",
       });
     } else {
-      // SweetAlert de succès
-      await import("sweetalert2").then((Sweetalert2) => {
-        Sweetalert2.default.fire({
-          icon: "success",
-          title: "Import réussi !",
-          text: `${result.createdCount} apprenant(s) importé(s) avec succès`,
-          confirmButtonText: "OK",
-          confirmButtonColor: "#f97316",
-        });
+      await Swal.fire({
+        icon: "success",
+        title: "Import réussi !",
+        text: `${result.createdCount} apprenant(s) importé(s) avec succès`,
+        confirmButtonText: "OK",
+        confirmButtonColor: "#f97316",
       });
     }
 

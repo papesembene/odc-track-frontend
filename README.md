@@ -1,5 +1,21 @@
-# Vue 3 + TypeScript + Vite
+# Orange Digital Center Frontend
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+## Variables d'environnement
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+Le frontend depend de la variable suivante :
+
+```bash
+VITE_API_BASE_URL=http://localhost:3000/api/v1
+```
+
+Exemples :
+
+```bash
+# local
+VITE_API_BASE_URL=http://localhost:3000/api/v1
+
+# production
+VITE_API_BASE_URL=https://api.mon-domaine.com/api/v1
+```
+
+Sans cette variable, l'application ne demarre pas.

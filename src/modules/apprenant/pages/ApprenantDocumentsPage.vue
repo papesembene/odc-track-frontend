@@ -12,11 +12,9 @@ import {
   getDocumentPath,
   deleteDocument,
   extractFileName,
-  resolveFileUrl,
   mapType,
   mapStatus,
   formatDate,
-  type SituationApi,
   type SituationType,
   type DocStatus,
 } from "../api/documents.api";
@@ -83,18 +81,13 @@ const situationOptions = computed(() =>
   })),
 );
 
-// Extrait l'origine API à partir de baseURL (ex: http://localhost:3000/api/v1 -> http://localhost:3000).
-const getApiOrigin = () => {
-  const baseUrl = String(api.defaults.baseURL ?? "");
-  return baseUrl.replace(/\/api\/v\d+\/?$/, "");
-};
-
-// Transforme le chemin stocké en URL exploitable par le navigateur.
-const resolveFileUrlLocal = (filePath: string) => {
+// Transforme le chemin stocke en URL exploitable par le navigateur.
+const resolveFileUrl = (filePath: string) => {
   if (!filePath) return "";
   if (filePath.startsWith("http://") || filePath.startsWith("https://"))
     return filePath;
-  const origin = getApiOrigin();
+  const baseUrl = String(api.defaults.baseURL ?? "");
+  const origin = baseUrl.replace(/\/api\/v\d+\/?$/, "");
   const normalizedPath = filePath.startsWith("/") ? filePath : `/${filePath}`;
   return `${origin}${normalizedPath}`;
 };
@@ -126,7 +119,7 @@ const handleViewDocument = async (documentId: string) => {
       return;
     }
 
-    const url = resolveFileUrlLocal(filePath);
+    const url = resolveFileUrl(filePath);
     if (!url) {
       showToast("URL du fichier invalide", "error");
       return;
@@ -153,7 +146,7 @@ const handleDownloadDocument = async (documentId: string) => {
       return;
     }
 
-    const url = resolveFileUrlLocal(filePath);
+    const url = resolveFileUrl(filePath);
     if (!url) {
       showToast("URL du fichier invalide", "error");
       return;

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
 import { onMounted, ref } from "vue";
-import { getStatistiques, type StatistiquesGlobales } from "../api/statistiques.api";
+import {
+  getStatistiques,
+  type StatistiquesGlobales,
+} from "../api/statistiques.api";
 import { showToast } from "../../../core/ui/toast";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import StatCard from "@/modules/pole-emploi/components/StatCard.vue";
@@ -41,7 +44,11 @@ const stats = ref<StatistiquesGlobales>({
 async function loadStats() {
   isLoading.value = true;
   try {
-    stats.value = await getStatistiques();
+    stats.value = await getStatistiques({
+      includePromotions: false,
+      includeReferentiels: false,
+      includeSituationsRecentes: true,
+    });
   } catch (error: any) {
     const msg =
       error?.response?.data?.message ||
