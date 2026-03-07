@@ -2,7 +2,11 @@
  * API pour les promotions et référentiels (Manager)
  */
 import { api } from "@/core/api/axios";
-import { extractApiData, extractApiItems } from "@/core/api/response";
+import {
+  extractApiData,
+  extractApiItems,
+  extractApiPagination,
+} from "@/core/api/response";
 
 // ============================================
 // TYPES
@@ -16,14 +20,15 @@ export type PromotionItem = {
   nom: string;
   annee: number;
   estActive?: boolean;
-};
-
-export type PromotionWithReferentiels = PromotionItem & {
+  createdAt?: string;
+  updatedAt?: string;
   referentiels?: Array<{
     referentielId: string;
     referentiel: ReferentielItem;
   }>;
 };
+
+export type PromotionWithReferentiels = PromotionItem;
 
 /**
  * Type représentant un référentiel
@@ -34,6 +39,22 @@ export type ReferentielItem = {
   description?: string;
 };
 
+export type PromotionsPagination = {
+  items: PromotionItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalItems: number;
+    totalPages: number;
+  };
+};
+
+export interface PromotionInput {
+  nom: string;
+  annee: number;
+  referentielIds: string[];
+}
+
 // ============================================
 // API
 // ============================================
@@ -43,9 +64,12 @@ export type ReferentielItem = {
  *
  * @returns Promesse avec la liste des promotions
  */
-export async function getPromotions(): Promise<PromotionItem[]> {
+export async function getPromotions(): Promise<PromotionsPagination> {
   const res = await api.get("/promotions");
-  return extractApiItems<PromotionItem>(res);
+  return {
+    items: extractApiItems<PromotionItem>(res),
+    pagination: extractApiPagination(res),
+  };
 }
 
 /**
@@ -77,4 +101,11 @@ export async function activatePromotion(id: string): Promise<PromotionItem> {
 export async function getActivePromotion(): Promise<PromotionWithReferentiels | null> {
   const res = await api.get("/promotions/active");
   return extractApiData<PromotionWithReferentiels | null>(res);
+}
+
+export async function createPromotion(
+  payload: PromotionInput,
+): Promise<PromotionWithReferentiels> {
+  const res = await api.post("/promotions", payload);
+  return extractApiData<PromotionWithReferentiels>(res) as PromotionWithReferentiels;
 }

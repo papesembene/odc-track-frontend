@@ -23,6 +23,7 @@ const ManagerApprenantsPage = () => import('@/modules/manager/pages/ManagerAppre
 const ManagerCoachesPage = () => import('@/modules/manager/pages/ManagerCoachesPage.vue')
 const ManagerApprenantDetailPage = () => import('@/modules/manager/pages/ManagerApprenantDetailPage.vue')
 const ManagerPromotionsPage = () => import('@/modules/manager/pages/ManagerPromotionsPage.vue')
+const ManagerReferentielsPage = () => import('@/modules/manager/pages/ManagerReferentielsPage.vue')
 const ManagerStatistiquesPage = () => import('@/modules/manager/pages/ManagerStatistiquesPage.vue')
 const CoachDashboardPage = () => import('@/modules/coach/pages/CoachDashboardPage.vue')
 const CoachApprenantsPage = () => import('@/modules/coach/pages/CoachApprenantsPage.vue')
@@ -85,6 +86,7 @@ const router = createRouter({
     { path: '/manager/apprenants/:id', name: 'manager-apprenant-detail', component: ManagerApprenantDetailPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
     { path: '/manager/coaches', name: 'manager-coaches', component: ManagerCoachesPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
     { path: '/manager/promotions', name: 'manager-promotions', component: ManagerPromotionsPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
+    { path: '/manager/referentiels', name: 'manager-referentiels', component: ManagerReferentielsPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
     { path: '/manager/statistiques', name: 'manager-statistiques', component: ManagerStatistiquesPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
 
     // Coach (UI flow)
