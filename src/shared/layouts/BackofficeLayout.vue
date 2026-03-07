@@ -23,7 +23,6 @@ const menu = computed(() => [
   { key: 'import' as const, label: 'Import', to: '/import-apprenants' },
 ])
 
-
 const { user, userName, role, hydrateCurrentUser } = useCurrentUser()
 
 const roleLabel = computed(() => {
@@ -47,9 +46,10 @@ onMounted(() => {
 })
 
 const linkClass = (key: MenuKey) => {
-  const base = 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors'
-  if (key === props.activeMenu) return `${base} bg-orange-500 text-white`
-  return `${base} text-slate-500 hover:bg-slate-100`
+  if (key === props.activeMenu) {
+    return 'sidebar-link-base bg-orange-500 text-white shadow-lg shadow-orange-500/20'
+  }
+  return 'sidebar-link-base text-slate-400 hover:bg-white/8 hover:text-slate-100'
 }
 
 const logout = async () => {
@@ -59,99 +59,100 @@ const logout = async () => {
 </script>
 
 <template>
-  <div class="h-screen overflow-hidden bg-slate-100 text-slate-900">
+  <div class="h-screen overflow-hidden bg-slate-50 text-slate-900">
     <div class="flex h-full">
-      <aside class="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white lg:flex">
-        <div class="border-b border-slate-200 px-5 py-5">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500">
-              <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-              </svg>
-            </div>
-            <div>
-              <p class="text-3xl font-bold leading-none">ODC Track</p>
-              <p class="mt-1 text-xl text-slate-400">Suivi d'insertion</p>
-            </div>
+
+      <!-- ── Desktop Sidebar ── -->
+      <aside class="hidden w-64 shrink-0 flex-col bg-slate-900 lg:flex">
+        <!-- Logo -->
+        <div class="flex items-center gap-3 border-b border-white/7 px-5 py-5">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/30">
+            <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-bold leading-tight text-white">ODC Track</p>
+            <p class="text-xs text-slate-500">Suivi d'insertion</p>
           </div>
         </div>
 
-        <nav class="flex-1 space-y-2 px-3 py-5">
-          <RouterLink v-for="item in menu" :key="item.key" :to="item.to" :class="linkClass(item.key)">
-            <svg v-if="item.key === 'dashboard'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="7" height="7" rx="1" />
-              <rect x="14" y="3" width="7" height="7" rx="1" />
-              <rect x="3" y="14" width="7" height="7" rx="1" />
-              <rect x="14" y="14" width="7" height="7" rx="1" />
-            </svg>
-            <svg v-else-if="item.key === 'validations'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <polyline points="9 12 11.5 14.5 15.5 10" />
-            </svg>
-            <svg v-else-if="item.key === 'apprenants'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
-            </svg>
-            <svg v-else-if="item.key === 'entreprises'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="7" width="18" height="14" rx="2" />
-              <path d="M8 7V5a4 4 0 0 1 8 0v2" />
-            </svg>
-            <svg v-else-if="item.key === 'import'" class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            <svg v-else class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="20" x2="18" y2="10" />
-              <line x1="12" y1="20" x2="12" y2="4" />
-              <line x1="6" y1="20" x2="6" y2="14" />
-            </svg>
-            <span>{{ item.label }}</span>
-          </RouterLink>
+        <!-- Nav -->
+        <nav class="flex-1 overflow-y-auto px-3 py-5">
+          <p class="mb-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Navigation</p>
+          <div class="space-y-1">
+            <RouterLink v-for="item in menu" :key="item.key" :to="item.to" :class="linkClass(item.key)">
+              <svg v-if="item.key === 'dashboard'" class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              <svg v-else-if="item.key === 'validations'" class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <polyline points="9 12 11.5 14.5 15.5 10" />
+              </svg>
+              <svg v-else-if="item.key === 'apprenants'" class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <svg v-else-if="item.key === 'entreprises'" class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="7" width="18" height="14" rx="2" /><path d="M8 7V5a4 4 0 0 1 8 0v2" />
+              </svg>
+              <svg v-else-if="item.key === 'import'" class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              <svg v-else class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+              <span>{{ item.label }}</span>
+            </RouterLink>
+          </div>
         </nav>
 
-        <div class="border-t border-slate-200 px-3 py-4">
-          <button type="button" @click="logout" class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-50">
-            <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-              <polyline points="16 17 21 12 16 7" />
-              <line x1="21" y1="12" x2="9" y2="12" />
+        <!-- Logout -->
+        <div class="border-t border-white/7 px-3 py-4">
+          <button type="button" @click="logout" class="sidebar-link-base w-full text-left text-red-400 hover:bg-red-500/10 hover:text-red-300">
+            <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
             </svg>
             <span>Déconnexion</span>
           </button>
         </div>
       </aside>
 
-      <div class="flex min-w-0 min-h-0 flex-1 flex-col">
-        <header class="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 lg:px-8">
+      <!-- ── Main content ── -->
+      <div class="flex min-w-0 flex-1 flex-col min-h-0">
+        <!-- Header -->
+        <header class="sticky top-0 z-20 flex items-center justify-between border-b border-slate-200 bg-white/90 px-5 py-3.5 shadow-sm backdrop-blur-md lg:px-7">
           <div class="flex items-center gap-3">
-            <button class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 lg:hidden" @click="mobileOpen = true">
+            <button
+              class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700 lg:hidden"
+              @click="mobileOpen = true"
+            >
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="18" x2="21" y2="18" />
+                <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
               </svg>
             </button>
-            <h1 class="text-2xl font-bold text-slate-900">{{ title }}</h1>
+            <div class="flex items-center gap-2">
+              <span class="hidden text-xs text-slate-400 sm:block">ODC Track</span>
+              <svg class="hidden h-3 w-3 text-slate-300 sm:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6" /></svg>
+              <h1 class="text-sm font-bold text-slate-900 sm:text-base">{{ title }}</h1>
+            </div>
           </div>
 
-          <div class="flex items-center gap-5">
-            <button class="relative text-slate-400 transition-colors hover:text-slate-600">
-              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          <div class="flex items-center gap-2 sm:gap-4">
+            <button class="relative flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-600">
+              <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
               </svg>
-              <span class="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500"></span>
+              <span class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white"></span>
             </button>
-
-            <div class="hidden h-8 w-px bg-slate-200 lg:block"></div>
-
-            <div class="hidden text-right lg:block">
+            <div class="hidden h-6 w-px bg-slate-200 sm:block"></div>
+            <div class="hidden text-right sm:block">
               <p class="text-sm font-semibold leading-tight text-slate-900">{{ userName }}</p>
-              <p class="text-xs text-slate-500">{{ roleLabel }}</p>
+              <p class="text-xs text-slate-400">{{ roleLabel }}</p>
             </div>
-
-            <div class="flex h-10 w-10 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">{{ avatarInitial }}</div>
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-sm font-bold text-white shadow-md shadow-orange-500/25">{{ avatarInitial }}</div>
           </div>
         </header>
 
@@ -161,26 +162,69 @@ const logout = async () => {
       </div>
     </div>
 
-    <div v-if="mobileOpen" class="fixed inset-0 z-50 lg:hidden">
-      <button class="absolute inset-0 bg-black/40" @click="mobileOpen = false"></button>
-      <aside class="relative h-full w-72 bg-white shadow-xl">
-        <div class="flex items-center justify-between border-b border-slate-200 px-4 py-4">
-          <p class="text-base font-semibold">ODC Track</p>
-          <button class="text-xl text-slate-500" @click="mobileOpen = false">×</button>
-        </div>
+    <!-- ── Mobile overlay ── -->
+    <Transition name="fade-overlay">
+      <div v-if="mobileOpen" class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-sm lg:hidden" @click="mobileOpen = false" />
+    </Transition>
 
-        <nav class="space-y-2 px-3 py-4">
-          <RouterLink
-            v-for="item in menu"
-            :key="item.key"
-            :to="item.to"
-            :class="linkClass(item.key)"
-            @click="mobileOpen = false"
-          >
-            <span>{{ item.label }}</span>
-          </RouterLink>
+    <!-- ── Mobile sidebar drawer ── -->
+    <Transition name="slide-sidebar">
+      <aside v-show="mobileOpen" class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-900 shadow-2xl lg:hidden">
+        <div class="flex items-center justify-between border-b border-white/7 px-5 py-5">
+          <div class="flex items-center gap-3">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600">
+              <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+            <p class="text-sm font-bold text-white">ODC Track</p>
+          </div>
+          <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white" @click="mobileOpen = false">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+        <nav class="flex-1 overflow-y-auto px-3 py-5">
+          <p class="mb-2 px-4 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Navigation</p>
+          <div class="space-y-1">
+            <RouterLink
+              v-for="item in menu" :key="item.key" :to="item.to"
+              :class="linkClass(item.key)"
+              @click="mobileOpen = false"
+            >
+              <span>{{ item.label }}</span>
+            </RouterLink>
+          </div>
         </nav>
+        <div class="border-t border-white/7 px-3 py-4">
+          <button type="button" @click="logout" class="sidebar-link-base w-full text-left text-red-400 hover:bg-red-500/10 hover:text-red-300">
+            <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+            <span>Déconnexion</span>
+          </button>
+        </div>
       </aside>
-    </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+.fade-overlay-enter-active,
+.fade-overlay-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-overlay-enter-from,
+.fade-overlay-leave-to {
+  opacity: 0;
+}
+.slide-sidebar-enter-active,
+.slide-sidebar-leave-active {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.slide-sidebar-enter-from,
+.slide-sidebar-leave-to {
+  transform: translateX(-100%);
+}
+</style>

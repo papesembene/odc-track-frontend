@@ -95,8 +95,12 @@ export async function getMyCv(): Promise<DocumentApi | null> {
 /** Extrait le nom du fichier depuis un chemin */
 export function extractFileName(path: string): string {
   if (!path) return "Document";
-  const chunks = path.split("/");
-  return chunks[chunks.length - 1] || path;
+
+  // Les URLs signées (B2/S3/R2) contiennent des query params techniques.
+  // On les retire pour n'afficher que le vrai nom du fichier dans l'UI.
+  const cleanPath = path.split("?")[0] || path;
+  const chunks = cleanPath.split("/");
+  return chunks[chunks.length - 1] || cleanPath;
 }
 
 /** Résout l'URL complète du fichier */

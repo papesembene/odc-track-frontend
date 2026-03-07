@@ -1,7 +1,68 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: var(--color-orange-500);
+  --color-primary-dark: var(--color-orange-600);
+  --color-sidebar-bg: #0f172a;
+  --color-sidebar-border: rgba(255, 255, 255, 0.07);
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-text-hover: #e2e8f0;
+  --color-sidebar-active: var(--color-orange-500);
+}
+
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     font-family: 'Inter', sans-serif;
+    color: #0f172a;
+    background-color: #f8fafc;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+}
+
+@utility sidebar-link-base {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition-property: background-color, color;
+  transition-duration: 200ms;
+}
+
+@layer components {
+  .toast-enter-active,
+  .toast-leave-active {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .toast-enter-from,
+  .toast-leave-to {
+    opacity: 0;
+    transform: translateX(100%);
   }
 }

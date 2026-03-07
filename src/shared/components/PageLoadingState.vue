@@ -13,10 +13,15 @@ withDefaults(
 
 <template>
   <div
-    class="flex items-center justify-center"
-    :class="compact ? 'py-8' : 'py-12'"
+    class="flex flex-col items-center justify-center gap-3"
+    :class="compact ? 'py-8' : 'py-14'"
   >
-    <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
-    <span class="ml-3 text-slate-500">{{ message }}</span>
+    <!-- Spinner ring -->
+    <div class="relative flex h-12 w-12 items-center justify-center">
+      <div class="absolute inset-0 rounded-full border-4 border-slate-200"></div>
+      <div class="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-orange-500"></div>
+      <div class="h-2.5 w-2.5 rounded-full bg-orange-500/30"></div>
+    </div>
+    <p class="text-sm font-medium text-slate-500">{{ message }}</p>
   </div>
 </template>
