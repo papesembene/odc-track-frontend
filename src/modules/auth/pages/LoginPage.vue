@@ -66,11 +66,16 @@ const onSubmit = async () => {
     const token = data.data.accessToken;
     const authUser = data.data.user;
     const role = authUser?.role;
+    const mustChangePassword = Boolean(data.data.mustChangePassword);
 
     if (!token) throw new Error("Token manquant dans la réponse login");
-    persistAuthenticatedSession(token, authUser);
+    persistAuthenticatedSession(token, authUser, { mustChangePassword });
     showToast("Connexion réussie", "success", 1800);
-    router.push(getDefaultPathByRole(role));
+    router.push(
+      role === "APPRENANT" && mustChangePassword
+        ? "/apprenant/changer-mot-de-passe"
+        : getDefaultPathByRole(role),
+    );
   } catch (e: any) {
     const apiMessage = e?.response?.data?.message;
     errorMessage.value =
@@ -269,10 +274,6 @@ const onSubmit = async () => {
           <div class="rounded-2xl border border-white/8 bg-white/5 px-5 py-3 text-center backdrop-blur-sm">
             <p class="text-2xl font-extrabold text-white">100%</p>
             <p class="mt-0.5 text-xs text-slate-500">Données sécurisées</p>
-          </div>
-          <div class="rounded-2xl border border-white/8 bg-white/5 px-5 py-3 text-center backdrop-blur-sm">
-            <p class="text-2xl font-extrabold text-white">4</p>
-            <p class="mt-0.5 text-xs text-slate-500">Rôles utilisateurs</p>
           </div>
           <div class="rounded-2xl border border-white/8 bg-white/5 px-5 py-3 text-center backdrop-blur-sm">
             <p class="text-2xl font-extrabold text-orange-400">ODC</p>

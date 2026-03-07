@@ -133,7 +133,7 @@ async function onChangePassword() {
   isChangingPassword.value = true;
   try {
     await changePassword({
-      currentPassword: currentPassword.value,
+      ancienPassword: currentPassword.value,
       newPassword: newPassword.value,
     });
 

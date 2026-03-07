@@ -2,6 +2,7 @@ import type { DashboardUser } from "@/modules/dashboard/types";
 
 const ROLE_KEY = "role";
 const USER_KEY = "odc_current_user";
+const MUST_CHANGE_PASSWORD_KEY = "odc_must_change_password";
 
 export const sessionStorage = {
   getCurrentUser(): DashboardUser | null {
@@ -38,8 +39,17 @@ export const sessionStorage = {
     localStorage.setItem(ROLE_KEY, role);
   },
 
+  getMustChangePassword() {
+    return localStorage.getItem(MUST_CHANGE_PASSWORD_KEY) === "true";
+  },
+
+  setMustChangePassword(value: boolean) {
+    localStorage.setItem(MUST_CHANGE_PASSWORD_KEY, String(value));
+  },
+
   clearCurrentUser() {
     localStorage.removeItem(USER_KEY);
     localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(MUST_CHANGE_PASSWORD_KEY);
   },
 };

@@ -9,6 +9,10 @@ type LoginUser = {
   email?: string | null;
 };
 
+type PersistSessionOptions = {
+  mustChangePassword?: boolean;
+};
+
 function isUserRole(role: string | null | undefined): role is UserRole {
   return (
     role === "APPRENANT" ||
@@ -37,8 +41,13 @@ function toDashboardUser(user?: LoginUser | null): DashboardUser | null {
   };
 }
 
-export function persistAuthenticatedSession(accessToken: string, user?: LoginUser | null) {
+export function persistAuthenticatedSession(
+  accessToken: string,
+  user?: LoginUser | null,
+  options?: PersistSessionOptions,
+) {
   tokenStorage.setAccessToken(accessToken);
+  sessionStorage.setMustChangePassword(Boolean(options?.mustChangePassword));
 
   const dashboardUser = toDashboardUser(user);
   if (dashboardUser) {

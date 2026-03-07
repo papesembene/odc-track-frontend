@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { tokenStorage } from '@/core/auth/token-storage'
 import { getAuthenticatedRole } from '@/core/auth/auth-session'
+import { sessionStorage } from '@/core/auth/session-storage'
 import { getDefaultPathByRole } from '@/core/auth/role-redirect'
 
 const LoginPage = () => import('@/modules/auth/pages/LoginPage.vue')
@@ -18,6 +19,7 @@ const ApprenantNewSituationPage = () => import('@/modules/apprenant/pages/Appren
 const ApprenantSituationDetailPage = () => import('@/modules/apprenant/pages/ApprenantSituationDetailPage.vue')
 const ApprenantDocumentsPage = () => import('@/modules/apprenant/pages/ApprenantDocumentsPage.vue')
 const ApprenantProfilPage = () => import('@/modules/apprenant/pages/ApprenantProfilPage.vue')
+const ApprenantForceChangePasswordPage = () => import('@/modules/apprenant/pages/ApprenantForceChangePasswordPage.vue')
 const ManagerDashboardPage = () => import('@/modules/manager/pages/ManagerDashboardPage.vue')
 const ManagerApprenantsPage = () => import('@/modules/manager/pages/ManagerApprenantsPage.vue')
 const ManagerCoachesPage = () => import('@/modules/manager/pages/ManagerCoachesPage.vue')
@@ -79,6 +81,12 @@ const router = createRouter({
       component: ApprenantProfilPage,
       meta: { roles: ['APPRENANT'] },
     },
+    {
+      path: '/apprenant/changer-mot-de-passe',
+      name: 'apprenant-force-change-password',
+      component: ApprenantForceChangePasswordPage,
+      meta: { roles: ['APPRENANT'] },
+    },
 
     // Manager (UI flow)
     { path: '/dashboard-manager', name: 'dashboard-manager', component: ManagerDashboardPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
@@ -118,6 +126,27 @@ router.beforeEach((to) => {
 
   if (isAuthenticated && allowedRoles && role && !allowedRoles.includes(role)) {
     return { path: getDefaultPathByRole(role) }
+  }
+
+  const mustChangePassword = sessionStorage.getMustChangePassword()
+  const forceChangePasswordPath = '/apprenant/changer-mot-de-passe'
+
+  if (
+    isAuthenticated &&
+    role === 'APPRENANT' &&
+    mustChangePassword &&
+    to.path !== forceChangePasswordPath
+  ) {
+    return { path: forceChangePasswordPath }
+  }
+
+  if (
+    isAuthenticated &&
+    role === 'APPRENANT' &&
+    !mustChangePassword &&
+    to.path === forceChangePasswordPath
+  ) {
+    return { path: '/dashboard-apprenant' }
   }
 
   return true
