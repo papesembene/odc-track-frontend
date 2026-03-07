@@ -1,139 +1,237 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
 import CoachLayout from '@/modules/coach/layouts/CoachLayout.vue'
+import {
+  formatCoachDate,
+  formatCoachStatus,
+  getCoachApprenants,
+  getCoachDashboard,
+  type CoachApprenantListItem,
+  type CoachDashboard,
+  type CoachPromotionOption,
+} from '@/modules/coach/api/coach.api'
 
-// ── Stat cards ──
-const stats = [
-  {
-    label: 'Apprenants suivis',
-    value: '3',
-    iconBg: 'bg-orange-50',
-    iconColor: 'text-orange-400',
-    icon: 'person',
-  },
-  {
-    label: 'Situations en cours',
-    value: '2',
-    iconBg: 'bg-blue-50',
-    iconColor: 'text-blue-400',
-    icon: 'briefcase',
-  },
-  {
-    label: "Taux d'insertion",
-    value: '60%',
-    iconBg: 'bg-emerald-50',
-    iconColor: 'text-emerald-500',
-    icon: 'trend',
-  },
-  {
-    label: 'Alertes',
-    value: '2',
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-400',
-    icon: 'warning',
-  },
-]
+const router = useRouter()
+const loading = ref(true)
+const error = ref<string | null>(null)
+const selectedPromotionId = ref('')
+const dashboard = ref<CoachDashboard | null>(null)
+const apprenants = ref<CoachApprenantListItem[]>([])
 
-// ── Students ──
-interface Student {
-  initials: string
-  name: string
-  promo: string
-  track: string
-  situationCount: number
-  situationLabel: string
-  status: 'En attente' | 'En cours' | 'Validée'
+const availablePromotions = computed<CoachPromotionOption[]>(() => {
+  return dashboard.value?.scope.availablePromotions ?? []
+})
+
+const selectedPromotion = computed(() => {
+  return dashboard.value?.scope.selectedPromotion ?? null
+})
+
+const activePromotion = computed(() => {
+  return availablePromotions.value.find((promotion) => promotion.estActive) ?? null
+})
+
+const stats = computed(() => {
+  if (!dashboard.value) {
+    return []
+  }
+
+  return [
+    {
+      label: 'Apprenants suivis',
+      value: String(dashboard.value.totalApprenants),
+      iconBg: 'bg-orange-50',
+      iconColor: 'text-orange-400',
+      icon: 'person',
+    },
+    {
+      label: 'Situations suivies',
+      value: String(dashboard.value.totalSituations),
+      iconBg: 'bg-blue-50',
+      iconColor: 'text-blue-400',
+      icon: 'briefcase',
+    },
+    {
+      label: "Taux d'insertion",
+      value: `${dashboard.value.tauxInsertion}%`,
+      iconBg: 'bg-emerald-50',
+      iconColor: 'text-emerald-500',
+      icon: 'trend',
+    },
+    {
+      label: 'En attente',
+      value: String(dashboard.value.enAttente),
+      iconBg: 'bg-amber-50',
+      iconColor: 'text-amber-400',
+      icon: 'warning',
+    },
+  ]
+})
+
+const topApprenants = computed(() => apprenants.value.slice(0, 5))
+
+const activities = computed(() => {
+  return (dashboard.value?.situationsRecentes ?? []).map((item) => ({
+    id: item.id,
+    name: `${item.apprenant.user.prenom} ${item.apprenant.user.nom}`,
+    action: item.valide ? 'Situation validée' : 'Situation mise à jour',
+    detail: formatCoachStatus(item.statut, item.valide),
+    date: formatCoachDate(item.createdAt),
+  }))
+})
+
+const alerts = computed(() => {
+  const result: Array<{ type: 'warning' | 'info'; text: string; date: string }> = []
+
+  if (dashboard.value?.enAttente) {
+    result.push({
+      type: 'warning',
+      text: `${dashboard.value.enAttente} situation(s) attendent encore une validation`,
+      date: 'En cours',
+    })
+  }
+
+  if (selectedPromotion.value) {
+    result.push({
+      type: 'info',
+      text: `Consultation de ${selectedPromotion.value.nom} (${selectedPromotion.value.annee})`,
+      date: dashboard.value?.scope.referentiel.nom ?? 'Référentiel',
+    })
+  }
+
+  return result
+})
+
+// Le coach charge son dashboard et un extrait d'apprenants dans le meme scope.
+async function loadCoachDashboard() {
+  loading.value = true
+  error.value = null
+
+  try {
+    const query = selectedPromotionId.value
+      ? { promotionId: selectedPromotionId.value }
+      : undefined
+
+    const [dashboardData, apprenantsData] = await Promise.all([
+      getCoachDashboard(query),
+      getCoachApprenants({ ...query, page: 1, limit: 5 }),
+    ])
+
+    dashboard.value = dashboardData
+    apprenants.value = apprenantsData.items
+    selectedPromotionId.value = dashboardData.scope.selectedPromotion?.id ?? ''
+  } catch (e: any) {
+    error.value = e.message || 'Erreur lors du chargement du dashboard coach'
+  } finally {
+    loading.value = false
+  }
 }
 
-const students: Student[] = [
-  {
-    initials: 'MB',
-    name: 'Moussa Ba',
-    promo: 'Promo 2024',
-    track: 'Développement Web',
-    situationCount: 2,
-    situationLabel: '2 situations',
-    status: 'En attente',
-  },
-  {
-    initials: 'MS',
-    name: 'Mariama Sarr',
-    promo: 'Promo 2024',
-    track: 'Data Science',
-    situationCount: 2,
-    situationLabel: '2 situations',
-    status: 'En cours',
-  },
-  {
-    initials: 'OT',
-    name: 'Omar Thiam',
-    promo: 'Promo 2023',
-    track: 'Développement Web',
-    situationCount: 1,
-    situationLabel: '1 situation',
-    status: 'Validée',
-  },
-]
-
-const statusClass = (status: Student['status']) => {
-  if (status === 'En attente') return 'bg-orange-100 text-orange-600'
-  if (status === 'En cours')   return 'bg-blue-100 text-blue-600'
-  return 'bg-emerald-100 text-emerald-600'
+function goToApprenant(id: string) {
+  const promotionId = selectedPromotionId.value
+  const suffix = promotionId ? `?promotionId=${promotionId}` : ''
+  router.push(`/coach/apprenants/${id}${suffix}`)
 }
 
-// ── Alerts ──
-interface AlertItem {
-  type: 'warning' | 'info'
-  text: string
-  date: string
+const statusClass = (item: CoachApprenantListItem) => {
+  const latest = item.situations[0]
+  if (!latest) return 'bg-slate-100 text-slate-600'
+  if (latest.valide) return 'bg-emerald-100 text-emerald-600'
+  if (latest.statut === 'EN_STAGE' || latest.statut === 'EN_EMPLOI') {
+    return 'bg-blue-100 text-blue-600'
+  }
+  return 'bg-amber-100 text-amber-600'
 }
 
-const alerts: AlertItem[] = [
-  {
-    type: 'warning',
-    text: "Mariama Sarr n'a pas déclaré de situation depuis 30 jours",
-    date: '15/01/2024',
-  },
-  {
-    type: 'info',
-    text: "3 situations en attente de validation par Pôle Emploi",
-    date: '14/01/2024',
-  },
-]
-
-// ── Recent activity ──
-interface ActivityItem {
-  name: string
-  action: string
-  detail: string
-  date: string
+const statusLabel = (item: CoachApprenantListItem) => {
+  const latest = item.situations[0]
+  if (!latest) return 'Aucune situation'
+  return formatCoachStatus(latest.statut, latest.valide)
 }
 
-const activities: ActivityItem[] = [
-  {
-    name: 'Moussa Ba',
-    action: 'Nouvelle situation déclarée',
-    detail: 'Stage',
-    date: '2024-01-15 14:30',
-  },
-  {
-    name: 'Mariama Sarr',
-    action: 'Document uploadé',
-    detail: 'Contrat',
-    date: '2024-01-15 11:00',
-  },
-  {
-    name: 'Omar Thiam',
-    action: 'Situation validée',
-    detail: 'CDI',
-    date: '2024-01-14 16:45',
-  },
-]
+onMounted(loadCoachDashboard)
 </script>
 
 <template>
   <CoachLayout title="Tableau de bord Coach" active-menu="dashboard">
     <div class="space-y-5">
+      <div v-if="error" class="rounded-2xl bg-red-50 p-4 text-red-600">
+        {{ error }}
+      </div>
 
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p class="text-sm font-semibold text-slate-900">
+              Référentiel : {{ dashboard?.scope.referentiel.nom || '—' }}
+            </p>
+            <p class="mt-1 text-sm text-slate-500">
+              Le coach consulte toujours les apprenants de son référentiel, avec une promotion locale sélectionnable.
+            </p>
+            <div
+              class="mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+              :class="
+                activePromotion
+                  ? 'bg-emerald-50 text-emerald-700'
+                  : 'bg-amber-50 text-amber-700'
+              "
+            >
+              <span
+                class="h-2 w-2 rounded-full"
+                :class="activePromotion ? 'bg-emerald-500' : 'bg-amber-500'"
+              ></span>
+              {{
+                loading
+                  ? 'Chargement de la promotion active...'
+                  : activePromotion
+                    ? `Promotion active : ${activePromotion.nom} (${activePromotion.annee})`
+                    : 'Aucune promotion active détectée'
+              }}
+            </div>
+          </div>
+
+          <div class="w-full max-w-xs">
+            <label class="mb-2 block text-sm font-medium text-slate-700">Promotion consultée</label>
+            <select
+              v-model="selectedPromotionId"
+              class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-700 outline-none focus:border-orange-400"
+              @change="loadCoachDashboard"
+            >
+              <option value="">
+                {{
+                  loading
+                    ? 'Chargement des promotions...'
+                    : activePromotion
+                      ? `Promotion active - ${activePromotion.nom} (${activePromotion.annee})`
+                      : 'Promotion active'
+                }}
+              </option>
+              <option
+                v-for="promotion in availablePromotions"
+                :key="promotion.id"
+                :value="promotion.id"
+              >
+                {{ promotion.nom }} ({{ promotion.annee }}){{ promotion.estActive ? ' · Active' : '' }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="loading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article
+          v-for="index in 4"
+          :key="index"
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div class="animate-pulse">
+            <div class="h-4 w-28 rounded bg-slate-200"></div>
+            <div class="mt-4 h-9 w-20 rounded bg-slate-200"></div>
+          </div>
+        </article>
+      </div>
+
+      <template v-else>
       <!-- ── Stat cards ── -->
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article
@@ -187,27 +285,28 @@ const activities: ActivityItem[] = [
 
           <div class="divide-y divide-slate-100 px-4 py-2">
             <div
-              v-for="student in students"
-              :key="student.name"
+              v-for="student in topApprenants"
+              :key="student.id"
               class="flex items-center gap-4 rounded-xl px-2 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+              @click="goToApprenant(student.id)"
             >
               <!-- Avatar -->
               <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
-                {{ student.initials }}
+                {{ `${student.user.prenom?.[0] || ''}${student.user.nom?.[0] || ''}`.toUpperCase() }}
               </div>
 
               <!-- Info -->
               <div class="min-w-0 flex-1">
-                <p class="text-sm font-semibold text-slate-900">{{ student.name }}</p>
-                <p class="text-xs text-slate-500">{{ student.promo }} • {{ student.track }}</p>
+                <p class="text-sm font-semibold text-slate-900">{{ student.user.prenom }} {{ student.user.nom }}</p>
+                <p class="text-xs text-slate-500">{{ student.promotion.nom }} {{ student.promotion.annee }} • {{ student.referentiel.nom }}</p>
               </div>
 
               <!-- Status + chevron -->
               <div class="flex items-center gap-3 shrink-0">
                 <div class="text-right">
-                  <p class="text-xs text-slate-500 mb-1">{{ student.situationLabel }}</p>
-                  <span :class="['rounded-full px-2.5 py-0.5 text-xs font-semibold', statusClass(student.status)]">
-                    {{ student.status }}
+                  <p class="text-xs text-slate-500 mb-1">{{ student._count.situations }} situation(s)</p>
+                  <span :class="['rounded-full px-2.5 py-0.5 text-xs font-semibold', statusClass(student)]">
+                    {{ statusLabel(student) }}
                   </span>
                 </div>
                 <svg class="h-4 w-4 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -260,7 +359,7 @@ const activities: ActivityItem[] = [
             <div class="divide-y divide-slate-100 px-5">
               <div
                 v-for="activity in activities"
-                :key="activity.name + activity.date"
+                :key="activity.id"
                 class="flex items-start gap-3 py-4"
               >
                 <!-- dot -->
@@ -276,6 +375,7 @@ const activities: ActivityItem[] = [
 
         </div>
       </div>
+      </template>
 
     </div>
   </CoachLayout>

@@ -13,7 +13,7 @@ import QuickAccessCard from "@/modules/pole-emploi/components/QuickAccessCard.vu
 /**
  * Indicateur de chargement des données
  */
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 /**
  * État des statistiques globales du dashboard.
@@ -108,19 +108,36 @@ onMounted(loadStats);
           </div>
           <div class="flex shrink-0 gap-4">
             <div class="rounded-2xl bg-white/15 px-5 py-3 text-center">
-              <p class="text-2xl font-extrabold">{{ stats.totalApprenants }}</p>
+              <p class="text-2xl font-extrabold">
+                {{ isLoading ? "—" : stats.totalApprenants }}
+              </p>
               <p class="text-xs text-orange-100 mt-0.5">Apprenants</p>
             </div>
             <div class="rounded-2xl bg-white/15 px-5 py-3 text-center">
-              <p class="text-2xl font-extrabold">{{ stats.tauxInsertion }}%</p>
+              <p class="text-2xl font-extrabold">
+                {{ isLoading ? "—" : `${stats.tauxInsertion}%` }}
+              </p>
               <p class="text-xs text-orange-100 mt-0.5">Taux validation</p>
             </div>
           </div>
         </div>
       </div>
 
+      <div v-if="isLoading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div
+          v-for="index in 4"
+          :key="index"
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div class="animate-pulse">
+            <div class="h-4 w-24 rounded bg-slate-200"></div>
+            <div class="mt-4 h-9 w-16 rounded bg-slate-200"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Stats Row ── -->
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Total apprenants"
           :value="String(stats.totalApprenants)"

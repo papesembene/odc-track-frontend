@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getApprenants, type ApprenantListItem } from '@/modules/manager/api/apprenants.api'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
+import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 
 // Router instance
 const router = useRouter()
@@ -146,10 +147,7 @@ const statusClass = (s: ApprenantStatus) => {
   <ManagerLayout title="Apprenants" active-menu="apprenants">
     <div class="space-y-5">
       <!-- Loading state -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
-        <span class="ml-3 text-slate-500">Chargement des apprenants...</span>
-      </div>
+      <PageLoadingState v-if="loading" message="Chargement des apprenants..." />
 
       <!-- Error state -->
       <div v-else-if="error" class="rounded-2xl bg-red-50 p-4 text-red-600">

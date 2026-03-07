@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useCurrentUser } from '../../core/auth/useCurrentUser'
+import { clearAuthenticatedSession } from '@/core/auth/auth-session'
 
 type ApprenantMenuKey = 'dashboard' | 'situations' | 'documents' | 'profil'
 
@@ -11,6 +12,7 @@ const props = defineProps<{
 }>()
 
 const mobileOpen = ref(false)
+const router = useRouter()
 
 const menu: Array<{ key: ApprenantMenuKey; label: string; to: string }> = [
   { key: 'dashboard', label: 'Tableau de bord', to: '/dashboard-apprenant' },
@@ -47,6 +49,11 @@ const itemClass = (key: ApprenantMenuKey) => {
   return key === props.activeMenu
     ? `${base} bg-orange-500 text-white shadow-lg shadow-orange-500/25`
     : `${base} text-slate-400 hover:bg-white/10 hover:text-slate-100`
+}
+
+const logout = async () => {
+  clearAuthenticatedSession()
+  await router.push('/login')
 }
 </script>
 
@@ -116,16 +123,16 @@ const itemClass = (key: ApprenantMenuKey) => {
           </RouterLink>
         </nav>
         <div class="border-t border-white/10 px-3 py-4">
-          <RouterLink
-            to="/login"
+          <button
+            type="button"
             class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-400 transition-all duration-200 hover:bg-red-500/10 hover:text-red-300"
-            @click="mobileOpen = false"
+            @click="logout"
           >
             <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
             </svg>
             <span>Déconnexion</span>
-          </RouterLink>
+          </button>
         </div>
       </aside>
     </Transition>
@@ -176,15 +183,16 @@ const itemClass = (key: ApprenantMenuKey) => {
 
       <!-- Bottom: logout -->
       <div class="border-t border-white/10 px-3 py-4">
-        <RouterLink
-          to="/login"
+        <button
+          type="button"
           class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-400 transition-all duration-200 hover:bg-red-500/10 hover:text-red-300"
+          @click="logout"
         >
           <svg class="h-[18px] w-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
           </svg>
           <span>Déconnexion</span>
-        </RouterLink>
+        </button>
       </div>
     </aside>
 

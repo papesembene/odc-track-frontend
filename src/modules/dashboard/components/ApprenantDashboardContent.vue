@@ -4,6 +4,7 @@ import StatCard  from '../../dashboard/components/StatCard.vue'
 import { computed, onMounted, ref } from "vue";
 import { showToast } from "../../../core/ui/toast";
 import { useCurrentUser } from '../../../core/auth/useCurrentUser'
+import EmptyState from '../../../shared/components/EmptyState.vue'
 import {
   formatDate,
   getMesSituations,
@@ -25,7 +26,7 @@ type RecentSituation = {
 };
 
 const situations = ref<SituationApi[]>([]);
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 const getUiStatus = (item: SituationApi): UiStatus => mapStatus(item);
 
@@ -115,7 +116,20 @@ onMounted(() => {
     </div>
 
     <!-- ── Stats ── -->
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div v-if="isLoading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div
+        v-for="index in 4"
+        :key="index"
+        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+      >
+        <div class="animate-pulse">
+          <div class="h-4 w-24 rounded bg-slate-200"></div>
+          <div class="mt-4 h-9 w-16 rounded bg-slate-200"></div>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard label="Total situations" :value="String(stats.total)" icon-bg="bg-orange-100">
         <template #icon>
           <svg class="h-5 w-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -245,15 +259,12 @@ onMounted(() => {
       </div>
 
       <!-- Empty state -->
-      <div v-else-if="recentSituations.length === 0" class="mt-4 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 py-10 text-center">
-        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
-          <svg class="h-6 w-6 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" />
-          </svg>
-        </div>
-        <p class="mt-3 text-sm font-semibold text-slate-600">Aucune situation disponible</p>
-        <p class="mt-1 text-xs text-slate-400">Commencez par déclarer votre première situation</p>
-      </div>
+      <EmptyState
+        v-else-if="recentSituations.length === 0"
+        class="mt-4"
+        title="Aucune situation disponible"
+        description="Commencez par déclarer votre première situation"
+      />
 
       <!-- Situation cards -->
       <div v-else class="mt-4 space-y-3">

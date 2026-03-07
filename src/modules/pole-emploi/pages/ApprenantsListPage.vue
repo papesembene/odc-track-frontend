@@ -68,7 +68,7 @@ const globalStats = ref<StatistiquesGlobales | null>(null);
 /**
  * Indicateur de chargement
  */
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 /**
  * Pagination

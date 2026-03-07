@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
 import { getActivePromotion, type PromotionItem } from '@/modules/manager/api/promotions.api'
+import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 
 type Segment = { label: string; value: number; color: string; bg: string }
 
@@ -55,8 +56,12 @@ const maxStatut = computed(() => {
 })
 
 // Fonctions utilitaires
-const barWidth = (value: number, max: number) =>
-  `${Math.max(5, Math.round((value / max) * 100))}%`
+const barWidth = (value: number, max: number) => {
+  // Une valeur nulle doit produire une barre vide, pas une largeur minimale artificielle.
+  if (value <= 0 || max <= 0) return '0%'
+
+  return `${Math.max(5, Math.round((value / max) * 100))}%`
+}
 
 const pct = (value: number, total: number) =>
   total > 0 ? Math.round((value / total) * 100) : 0
@@ -134,9 +139,7 @@ onMounted(() => {
   <ManagerLayout title="Statistiques" active-menu="statistiques">
     <div class="space-y-5">
       <!-- Loading -->
-      <div v-if="isLoading" class="flex items-center justify-center py-20">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
-      </div>
+      <PageLoadingState v-if="isLoading" message="Chargement des statistiques..." />
 
       <template v-else-if="stats">
         <!-- ── Active Promotion Banner ── -->

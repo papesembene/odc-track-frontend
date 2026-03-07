@@ -9,6 +9,7 @@ import {
 } from "../api/apprenants.api";
 import { getDocumentsByApprenant, type Document } from "../api/documents.api";
 import { showToast } from "../../../core/ui/toast";
+import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
 const route = useRoute();
 const activeTab = ref<"situations" | "documents" | "informations">(
@@ -154,12 +155,7 @@ onMounted(() => {
 <template>
   <BackofficeLayout title="Détail apprenant" active-menu="apprenants">
     <!-- Loading state -->
-    <div v-if="loading" class="flex items-center justify-center py-20">
-      <div
-        class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"
-      ></div>
-      <span class="ml-3 text-slate-600">Chargement...</span>
-    </div>
+    <PageLoadingState v-if="loading" />
 
     <!-- Error state -->
     <div

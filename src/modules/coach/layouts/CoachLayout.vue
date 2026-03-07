@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRouter } from 'vue-router'
+import { useCurrentUser } from '@/core/auth/useCurrentUser'
+import { clearAuthenticatedSession } from '@/core/auth/auth-session'
 
 type CoachMenuKey = 'dashboard' | 'apprenants' | 'statistiques'
 
@@ -10,6 +12,29 @@ const props = defineProps<{
 }>()
 
 const mobileOpen = ref(false)
+const router = useRouter()
+
+const { user, userName, role, hydrateCurrentUser } = useCurrentUser()
+
+onMounted(() => {
+  hydrateCurrentUser()
+})
+
+const roleLabel = computed(() => {
+  if (role.value === 'COACH') return 'Coach'
+  if (role.value === 'MANAGER') return 'Manager'
+  if (role.value === 'POLE_EMPLOI') return 'Pôle Emploi'
+  if (role.value === 'APPRENANT') return 'Apprenant'
+  if (role.value === 'ADMIN') return 'Admin'
+  return 'Utilisateur'
+})
+
+const userInitials = computed(() => {
+  const prenom = user.value.prenom?.trim() ?? ''
+  const nom = user.value.nom?.trim() ?? ''
+  const source = prenom || nom || userName.value || 'U'
+  return source[0]?.toUpperCase() ?? 'U'
+})
 
 const menu: Array<{ key: CoachMenuKey; label: string; to: string }> = [
   { key: 'dashboard',     label: 'Tableau de bord', to: '/coach/dashboard' },
@@ -22,6 +47,11 @@ const linkClass = (key: CoachMenuKey) => {
   return key === props.activeMenu
     ? `${base} bg-orange-500 text-white`
     : `${base} text-slate-500 hover:bg-slate-100`
+}
+
+const logout = async () => {
+  clearAuthenticatedSession()
+  await router.push('/login')
 }
 </script>
 
@@ -78,9 +108,10 @@ const linkClass = (key: CoachMenuKey) => {
 
         <!-- Logout -->
         <div class="border-t border-slate-200 px-3 py-4">
-          <RouterLink
-            to="/login"
+          <button
+            type="button"
             class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+            @click="logout"
           >
             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -88,7 +119,7 @@ const linkClass = (key: CoachMenuKey) => {
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
             <span>Déconnexion</span>
-          </RouterLink>
+          </button>
         </div>
       </aside>
 
@@ -125,13 +156,13 @@ const linkClass = (key: CoachMenuKey) => {
             <div class="hidden h-6 w-px bg-slate-200 lg:block"></div>
 
             <div class="hidden text-right lg:block">
-              <p class="text-sm font-semibold leading-tight text-slate-900">Ibrahima Sow</p>
-              <p class="text-xs text-slate-500">Coach</p>
+              <p class="text-sm font-semibold leading-tight text-slate-900">{{ userName }}</p>
+              <p class="text-xs text-slate-500">{{ roleLabel }}</p>
             </div>
 
             <!-- Avatar -->
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-500 text-sm font-bold text-white">
-              I
+              {{ userInitials }}
             </div>
           </div>
         </header>
@@ -163,13 +194,13 @@ const linkClass = (key: CoachMenuKey) => {
           </RouterLink>
         </nav>
         <div class="border-t border-slate-200 px-3 py-4">
-          <RouterLink
-            to="/login"
+          <button
+            type="button"
             class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
-            @click="mobileOpen = false"
+            @click="logout"
           >
             <span>Déconnexion</span>
-          </RouterLink>
+          </button>
         </div>
       </aside>
     </div>

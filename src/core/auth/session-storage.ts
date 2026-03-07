@@ -30,7 +30,16 @@ export const sessionStorage = {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   },
 
+  getRole() {
+    return localStorage.getItem(ROLE_KEY);
+  },
+
+  setRole(role: DashboardUser["role"]) {
+    localStorage.setItem(ROLE_KEY, role);
+  },
+
   clearCurrentUser() {
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(ROLE_KEY);
   },
 };

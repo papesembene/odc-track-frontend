@@ -3,6 +3,8 @@ import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
 import { getActivePromotion, type PromotionItem } from '@/modules/manager/api/promotions.api'
+import PageLoadingState from '@/shared/components/PageLoadingState.vue'
+import EmptyState from '@/shared/components/EmptyState.vue'
 
 // ── Data from API ──
 const statsData = ref<StatistiquesGlobales | null>(null)
@@ -221,10 +223,7 @@ const promotions = computed(() => {
   <ManagerLayout title="Tableau de bord Manager" active-menu="dashboard">
     <div class="space-y-5">
       <!-- Loading state -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
-        <span class="ml-3 text-slate-500">Chargement des statistiques...</span>
-      </div>
+      <PageLoadingState v-if="loading" message="Chargement des statistiques..." />
 
       <!-- Error state -->
       <div v-else-if="error" class="rounded-2xl bg-red-50 p-4 text-red-600">
@@ -376,9 +375,11 @@ const promotions = computed(() => {
               </article>
               
               <!-- Empty state -->
-              <div v-if="activities.length === 0" class="py-8 text-center text-slate-400">
-                <p class="text-sm">Aucune activité récente</p>
-              </div>
+              <EmptyState
+                v-if="activities.length === 0"
+                title="Aucune activité récente"
+                compact
+              />
             </div>
         </div>
 

@@ -9,6 +9,7 @@ import {
   getReferentiels,
 } from "../api/situations.api";
 import { validateSituation, rejectSituation } from "../api/validations.api";
+import EmptyState from "@/shared/components/EmptyState.vue";
 
 /**
  * État local des données
@@ -20,7 +21,7 @@ const promotionsList = ref<{ id: string; nom: string }[]>([]);
 // Liste des référentiels pour le filtre (chargée depuis l'API)
 const referentielsList = ref<{ id: string; nom: string }[]>([]);
 // Indicateur de chargement
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 /**
  * Charge les filtres (promotions et référentiels) depuis l'API.
@@ -387,31 +388,11 @@ async function confirmReject() {
         </div>
 
         <!-- Empty state -->
-        <div
+        <EmptyState
           v-if="filtered.length === 0"
-          class="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center"
-        >
-          <div
-            class="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50"
-          >
-            <svg
-              class="h-7 w-7 text-emerald-500"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle cx="12" cy="12" r="9" />
-              <polyline points="9 12 11.5 14.5 15.5 10" />
-            </svg>
-          </div>
-          <p class="text-base font-bold text-slate-800">Tout est traité !</p>
-          <p class="text-sm text-slate-400">
-            Aucune situation ne correspond à vos filtres
-          </p>
-        </div>
+          title="Tout est traité !"
+          description="Aucune situation ne correspond à vos filtres"
+        />
 
         <ValidationCard
           v-for="item in filtered"

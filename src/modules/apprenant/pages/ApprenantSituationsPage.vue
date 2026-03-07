@@ -7,7 +7,7 @@ import { getMesSituations, formatDate, mapToSituationItem, type SituationApi, ty
 import { showToast } from '../../../core/ui/toast'
 
 const apiSituations = ref<SituationApi[]>([]);
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 const loadSituations = async () => {
   isLoading.value = true

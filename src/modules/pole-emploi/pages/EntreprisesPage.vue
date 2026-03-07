@@ -9,12 +9,14 @@ import {
 } from "../api/entreprises.api";
 import { showToast } from "../../../core/ui/toast";
 import { confirm } from "../../../core/ui/sweet-alert";
+import PageLoadingState from "@/shared/components/PageLoadingState.vue";
+import EmptyState from "@/shared/components/EmptyState.vue";
 
 /**
  * État des entreprises
  */
 const entreprises = ref<Entreprise[]>([]);
-const isLoading = ref(false);
+const isLoading = ref(true);
 const isCreating = ref(false);
 
 /**
@@ -332,19 +334,14 @@ onMounted(() => {
         class="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden"
       >
         <!-- Loading -->
-        <div v-if="isLoading" class="p-8 text-center">
-          <div
-            class="h-6 w-6 animate-spin rounded-full border-2 border-orange-500 border-t-transparent mx-auto"
-          ></div>
-          <p class="mt-2 text-sm text-slate-500">Chargement...</p>
-        </div>
+        <PageLoadingState v-if="isLoading" compact />
 
         <!-- Empty -->
         <div
           v-else-if="filteredEntreprises.length === 0"
-          class="p-8 text-center"
+          class="p-8"
         >
-          <p class="text-sm text-slate-500">Aucune entreprise trouvée</p>
+          <EmptyState title="Aucune entreprise trouvée" compact />
         </div>
 
         <!-- Table -->

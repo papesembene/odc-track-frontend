@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useCurrentUser } from '@/core/auth/useCurrentUser'
+import { clearAuthenticatedSession } from '@/core/auth/auth-session'
 
 type ManagerMenuKey = 'dashboard' | 'apprenants' | 'coaches' | 'promotions' | 'statistiques'
 
@@ -11,6 +12,7 @@ const props = defineProps<{
 }>()
 
 const mobileOpen = ref(false)
+const router = useRouter()
 
 // ── Current user ──
 const { user, userName, role, hydrateCurrentUser } = useCurrentUser()
@@ -58,6 +60,11 @@ const linkClass = (key: ManagerMenuKey) => {
   return key === props.activeMenu
     ? `${base} bg-orange-500 text-white`
     : `${base} text-slate-500 hover:bg-slate-100`
+}
+
+const logout = async () => {
+  clearAuthenticatedSession()
+  await router.push('/login')
 }
 </script>
 
@@ -126,9 +133,10 @@ const linkClass = (key: ManagerMenuKey) => {
 
         <!-- Logout -->
         <div class="border-t border-slate-200 px-3 py-4">
-          <RouterLink
-            to="/login"
+          <button
+            type="button"
             class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+            @click="logout"
           >
             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -136,7 +144,7 @@ const linkClass = (key: ManagerMenuKey) => {
               <line x1="21" y1="12" x2="9" y2="12"/>
             </svg>
             <span>Déconnexion</span>
-          </RouterLink>
+          </button>
         </div>
       </aside>
 

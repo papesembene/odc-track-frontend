@@ -13,7 +13,7 @@ import {
 const route = useRoute();
 const situation = ref<SituationApi | null>(null);
 const documents = ref<DocumentApi[]>([]);
-const isLoading = ref(false);
+const isLoading = ref(true);
 
 const situationId = computed(() => String(route.params.id ?? ""));
 

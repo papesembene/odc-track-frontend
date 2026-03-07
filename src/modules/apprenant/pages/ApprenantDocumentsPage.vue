@@ -31,7 +31,7 @@ type SituationGroup = {
 };
 
 const showModal = ref(false);
-const isLoading = ref(false);
+const isLoading = ref(true);
 const isDownloading = ref(false);
 const deletingDocumentId = ref<string | null>(null);
 const groups = ref<SituationGroup[]>([]);

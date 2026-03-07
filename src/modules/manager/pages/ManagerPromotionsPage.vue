@@ -6,6 +6,8 @@ import {
   type PromotionItem,
   activatePromotion,
 } from "@/modules/manager/api/promotions.api";
+import PageLoadingState from '@/shared/components/PageLoadingState.vue';
+import EmptyState from '@/shared/components/EmptyState.vue';
 
 interface PromotionWithStats extends PromotionItem {
   totalApprenants: number;
@@ -68,12 +70,7 @@ onMounted(fetchData);
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <div
-          class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"
-        ></div>
-        <span class="ml-3 text-slate-500">Chargement...</span>
-      </div>
+      <PageLoadingState v-if="loading" />
 
       <div
         v-else-if="error"
@@ -153,24 +150,11 @@ onMounted(fetchData);
         </div>
 
         <!-- Empty State -->
-        <div
+        <EmptyState
           v-if="promotions.length === 0"
-          class="col-span-full rounded-2xl border-2 border-dashed border-slate-200 py-12 text-center"
-        >
-          <svg
-            class="mx-auto mb-4 h-12 w-12 text-slate-300"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-          <p class="text-slate-500">Aucune promotion trouvée</p>
-        </div>
+          class="col-span-full"
+          title="Aucune promotion trouvée"
+        />
       </div>
 
       <!-- Info Box -->

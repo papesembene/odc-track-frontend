@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { useCurrentUser } from '../../core/auth/useCurrentUser'
+import { clearAuthenticatedSession } from '@/core/auth/auth-session'
 
 type MenuKey = 'dashboard' | 'validations' | 'apprenants' | 'statistiques' | 'entreprises' | 'import'
 
@@ -11,6 +12,7 @@ const props = defineProps<{
 }>()
 
 const mobileOpen = ref(false)
+const router = useRouter()
 
 const menu = computed(() => [
   { key: 'dashboard' as const, label: 'Tableau de bord', to: '/dashboard' },
@@ -48,6 +50,11 @@ const linkClass = (key: MenuKey) => {
   const base = 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors'
   if (key === props.activeMenu) return `${base} bg-orange-500 text-white`
   return `${base} text-slate-500 hover:bg-slate-100`
+}
+
+const logout = async () => {
+  clearAuthenticatedSession()
+  await router.push('/login')
 }
 </script>
 
@@ -104,14 +111,14 @@ const linkClass = (key: MenuKey) => {
         </nav>
 
         <div class="border-t border-slate-200 px-3 py-4">
-          <RouterLink to="/login" class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-red-500 transition-colors hover:bg-red-50">
+          <button type="button" @click="logout" class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-red-500 transition-colors hover:bg-red-50">
             <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
               <polyline points="16 17 21 12 16 7" />
               <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
             <span>Déconnexion</span>
-          </RouterLink>
+          </button>
         </div>
       </aside>
 

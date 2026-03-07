@@ -8,6 +8,7 @@ import {
   type SituationItem,
 } from "@/modules/manager/api/apprenants.api";
 import { getDocumentsByApprenant, type Document } from "@/modules/pole-emploi/api/documents.api";
+import PageLoadingState from '@/shared/components/PageLoadingState.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -133,10 +134,7 @@ onMounted(() => {
 <template>
   <ManagerLayout title="Détail apprenant" active-menu="apprenants">
     <!-- Loading state -->
-    <div v-if="loading" class="flex items-center justify-center py-20">
-      <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
-      <span class="ml-3 text-slate-600">Chargement...</span>
-    </div>
+    <PageLoadingState v-if="loading" />
 
     <!-- Error state -->
     <div v-else-if="error" class="rounded-xl border border-red-200 bg-red-50 p-6 text-center">

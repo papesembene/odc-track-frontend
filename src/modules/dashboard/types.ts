@@ -1,4 +1,9 @@
-export type UserRole = 'APPRENANT' | 'POLE_EMPLOI' | 'MANAGER'
+export type UserRole =
+  | 'APPRENANT'
+  | 'POLE_EMPLOI'
+  | 'MANAGER'
+  | 'COACH'
+  | 'ADMIN'
 
 export interface DashboardUser {
   fullName: string

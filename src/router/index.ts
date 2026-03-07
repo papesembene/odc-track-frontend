@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { tokenStorage } from '@/core/auth/token-storage'
+import { getAuthenticatedRole } from '@/core/auth/auth-session'
 import { getDefaultPathByRole } from '@/core/auth/role-redirect'
 
 const LoginPage = () => import('@/modules/auth/pages/LoginPage.vue')
@@ -34,58 +35,63 @@ const router = createRouter({
     { path: '/login', name: 'login', component: LoginPage },
 
     // Pole Emploi
-    { path: '/dashboard', name: 'dashboard', component: PoleEmploiDashboardPage },
-    { path: '/validations', name: 'validations', component: ValidationsPage },
-    { path: '/apprenants', name: 'apprenants', component: ApprenantsListPage },
-    { path: '/apprenants/:id', name: 'apprenant-detail', component: ApprenantDetailPage },
-    { path: '/statistiques', name: 'statistiques', component: PoleEmploiStatistiquesPage },
-    { path: '/entreprises', name: 'entreprises', component: EntreprisesPage },
-    { path: '/import-apprenants', name: 'import-apprenants', component: ImportApprenantsPage },
+    { path: '/dashboard', name: 'dashboard', component: PoleEmploiDashboardPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/validations', name: 'validations', component: ValidationsPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/apprenants', name: 'apprenants', component: ApprenantsListPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/apprenants/:id', name: 'apprenant-detail', component: ApprenantDetailPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/statistiques', name: 'statistiques', component: PoleEmploiStatistiquesPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/entreprises', name: 'entreprises', component: EntreprisesPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/import-apprenants', name: 'import-apprenants', component: ImportApprenantsPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
     {
       path: '/parametres',
       name: 'parametres',
       component: PlaceholderBackofficePage,
       props: { title: 'Paramètres', activeMenu: 'dashboard' },
+      meta: { roles: ['POLE_EMPLOI', 'ADMIN'] },
     },
 
     // Apprenant (UI flow)
-    { path: '/dashboard-apprenant', name: 'dashboard-apprenant', component: ApprenantDashboardPage },
-    { path: '/situations', name: 'apprenant-situations', component: ApprenantSituationsPage },
+    { path: '/dashboard-apprenant', name: 'dashboard-apprenant', component: ApprenantDashboardPage, meta: { roles: ['APPRENANT'] } },
+    { path: '/situations', name: 'apprenant-situations', component: ApprenantSituationsPage, meta: { roles: ['APPRENANT'] } },
     {
       path: '/situations/nouvelle',
       name: 'apprenant-situation-new',
       component: ApprenantNewSituationPage,
+      meta: { roles: ['APPRENANT'] },
     },
 
     {
       path: '/situations/:id',
       name: 'apprenant-situation-detail',
       component: ApprenantSituationDetailPage,
+      meta: { roles: ['APPRENANT'] },
     },
     {
       path: '/documents',
       name: 'apprenant-documents',
       component: ApprenantDocumentsPage,
+      meta: { roles: ['APPRENANT'] },
     },
     {
       path: '/profil',
       name: 'apprenant-profil',
       component: ApprenantProfilPage,
+      meta: { roles: ['APPRENANT'] },
     },
 
     // Manager (UI flow)
-    { path: '/dashboard-manager', name: 'dashboard-manager', component: ManagerDashboardPage },
-    { path: '/manager/apprenants', name: 'manager-apprenants', component: ManagerApprenantsPage },
-    { path: '/manager/apprenants/:id', name: 'manager-apprenant-detail', component: ManagerApprenantDetailPage },
-    { path: '/manager/coaches', name: 'manager-coaches', component: ManagerCoachesPage },
-    { path: '/manager/promotions', name: 'manager-promotions', component: ManagerPromotionsPage },
-    { path: '/manager/statistiques', name: 'manager-statistiques', component: ManagerStatistiquesPage },
+    { path: '/dashboard-manager', name: 'dashboard-manager', component: ManagerDashboardPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
+    { path: '/manager/apprenants', name: 'manager-apprenants', component: ManagerApprenantsPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
+    { path: '/manager/apprenants/:id', name: 'manager-apprenant-detail', component: ManagerApprenantDetailPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
+    { path: '/manager/coaches', name: 'manager-coaches', component: ManagerCoachesPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
+    { path: '/manager/promotions', name: 'manager-promotions', component: ManagerPromotionsPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
+    { path: '/manager/statistiques', name: 'manager-statistiques', component: ManagerStatistiquesPage, meta: { roles: ['MANAGER', 'ADMIN'] } },
 
     // Coach (UI flow)
-    { path: '/coach/dashboard', name: 'coach-dashboard', component: CoachDashboardPage },
-    { path: '/coach/apprenants', name: 'coach-apprenants', component: CoachApprenantsPage },
-    { path: '/coach/apprenants/:id', name: 'coach-apprenant-detail', component: CoachApprenantDetailPage },
-    { path: '/coach/statistiques', name: 'coach-statistiques', component: CoachStatistiquesPage },
+    { path: '/coach/dashboard', name: 'coach-dashboard', component: CoachDashboardPage, meta: { roles: ['COACH', 'ADMIN'] } },
+    { path: '/coach/apprenants', name: 'coach-apprenants', component: CoachApprenantsPage, meta: { roles: ['COACH', 'ADMIN'] } },
+    { path: '/coach/apprenants/:id', name: 'coach-apprenant-detail', component: CoachApprenantDetailPage, meta: { roles: ['COACH', 'ADMIN'] } },
+    { path: '/coach/statistiques', name: 'coach-statistiques', component: CoachStatistiquesPage, meta: { roles: ['COACH', 'ADMIN'] } },
 
     { path: '/', redirect: '/login' },
   ],
@@ -94,13 +100,21 @@ const router = createRouter({
 router.beforeEach((to) => {
   const isAuthenticated = Boolean(tokenStorage.getAccessToken())
   const isLoginPage = to.path === '/login'
-  const role = localStorage.getItem('role')
+  const role = getAuthenticatedRole()
 
   if (!isAuthenticated && !isLoginPage) {
     return { path: '/login' }
   }
 
   if (isAuthenticated && isLoginPage) {
+    return { path: getDefaultPathByRole(role) }
+  }
+
+  const allowedRoles = Array.isArray(to.meta.roles)
+    ? (to.meta.roles as string[])
+    : null
+
+  if (isAuthenticated && allowedRoles && role && !allowedRoles.includes(role)) {
     return { path: getDefaultPathByRole(role) }
   }
 

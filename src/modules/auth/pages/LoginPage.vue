@@ -2,7 +2,7 @@
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { api } from "../../../core/api/axios";
-import { tokenStorage } from "../../../core/auth/token-storage";
+import { persistAuthenticatedSession } from "../../../core/auth/auth-session";
 import { getDefaultPathByRole } from "../../../core/auth/role-redirect";
 import { showToast } from "../../../core/ui/toast";
 const router = useRouter();
@@ -62,11 +62,11 @@ const onSubmit = async () => {
    
     
     const token = data.data.accessToken;
-    const role = data.data.user?.role ;
+    const authUser = data.data.user;
+    const role = authUser?.role;
    
     if (!token) throw new Error("Token manquant dans la réponse login");
-    tokenStorage.setAccessToken(token);
-    localStorage.setItem("role", role ?? "");
+    persistAuthenticatedSession(token, authUser);
     showToast("Connexion réussie", "success", 1800);
     router.push(getDefaultPathByRole(role));
   } catch (e: any) {

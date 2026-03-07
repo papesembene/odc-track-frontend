@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getCoaches, createCoach, type CoachItem, type CreateCoachDto } from '@/modules/manager/api/coaches.api'
 import { getReferentiels, type ReferentielItem } from '@/modules/manager/api/promotions.api'
+import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 
 // ── State ──
 const coaches = ref<CoachItem[]>([])
@@ -112,10 +113,7 @@ onMounted(fetchCoaches)
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <div class="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent"></div>
-        <span class="ml-3 text-slate-500">Chargement...</span>
-      </div>
+      <PageLoadingState v-if="loading" />
 
       <!-- Error -->
       <div v-else-if="error" class="rounded-2xl bg-red-50 p-4 text-red-600">
