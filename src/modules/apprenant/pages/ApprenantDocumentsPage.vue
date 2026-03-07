@@ -11,12 +11,15 @@ import {
   getSituationsAvecDocuments,
   getDocumentPath,
   deleteDocument,
+  getMyCv,
+  uploadMyCv,
   extractFileName,
   mapType,
   mapStatus,
   formatDate,
   type SituationType,
   type DocStatus,
+  type DocumentApi,
 } from "../api/documents.api";
 
 type SituationGroup = {
@@ -33,8 +36,11 @@ type SituationGroup = {
 const showModal = ref(false);
 const isLoading = ref(true);
 const isDownloading = ref(false);
+const isUploadingCv = ref(false);
 const deletingDocumentId = ref<string | null>(null);
 const groups = ref<SituationGroup[]>([]);
+const cvDocument = ref<DocumentApi | null>(null);
+const cvFileInputRef = ref<HTMLInputElement | null>(null);
 
 const loadGroups = async () => {
   isLoading.value = true;
@@ -65,6 +71,14 @@ const loadGroups = async () => {
     showToast(message, "error");
   } finally {
     isLoading.value = false;
+  }
+};
+
+const loadCv = async () => {
+  try {
+    cvDocument.value = await getMyCv();
+  } catch {
+    cvDocument.value = null;
   }
 };
 
@@ -198,7 +212,59 @@ const handleDeleteDocument = async (documentId: string) => {
   }
 };
 
-onMounted(loadGroups);
+const openCvPicker = () => {
+  if (isUploadingCv.value) return;
+  cvFileInputRef.value?.click();
+};
+
+// Upload/remplacement du CV via endpoint dédié apprenant.
+const onCvFileSelected = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith(".pdf")) {
+    showToast("Le CV doit être au format PDF", "error");
+    input.value = "";
+    return;
+  }
+
+  isUploadingCv.value = true;
+  try {
+    const uploaded = await uploadMyCv(file);
+    cvDocument.value = uploaded;
+    showToast("CV mis à jour avec succès", "success");
+  } catch (error: any) {
+    const apiMessage = error?.response?.data?.message;
+    const message = Array.isArray(apiMessage)
+      ? apiMessage.join(", ")
+      : apiMessage || "Impossible de mettre à jour le CV";
+    showToast(message, "error");
+  } finally {
+    isUploadingCv.value = false;
+    input.value = "";
+  }
+};
+
+const openCurrentCv = () => {
+  const path = cvDocument.value?.fichier;
+  if (!path) return;
+  const url = resolveFileUrl(path);
+  if (!url) return;
+  openFile(url);
+};
+
+const downloadCurrentCv = () => {
+  const path = cvDocument.value?.fichier;
+  if (!path) return;
+  const url = resolveFileUrl(path);
+  if (!url) return;
+  downloadFile(url, extractFileName(path));
+};
+
+onMounted(async () => {
+  await Promise.all([loadGroups(), loadCv()]);
+});
 </script>
 
 <template>
@@ -208,7 +274,7 @@ onMounted(loadGroups);
         <div>
           <h2 class="text-2xl font-extrabold text-slate-900">Mes documents</h2>
           <p class="mt-1 text-sm text-slate-500">
-            Gérez tous vos documents liés à vos situations professionnelles
+            Gérez vos documents de situation et votre CV
           </p>
         </div>
         <button
@@ -232,7 +298,68 @@ onMounted(loadGroups);
         </button>
       </div>
 
-      <div class="grid gap-4 sm:grid-cols-3">
+      <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p class="text-sm font-bold text-slate-900">CV personnel</p>
+            <p class="mt-1 text-xs text-slate-500">
+              Document global non lié à une situation
+            </p>
+            <p v-if="cvDocument?.fichier" class="mt-2 text-xs text-slate-400">
+              Fichier: {{ extractFileName(cvDocument.fichier) }}
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              :disabled="isUploadingCv"
+              @click="openCvPicker"
+            >
+              {{ cvDocument ? "Mettre à jour mon CV" : "Ajouter mon CV" }}
+            </button>
+            <button
+              v-if="cvDocument?.fichier"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl border border-orange-200 px-4 py-2 text-sm font-semibold text-orange-600 transition-colors hover:bg-orange-50"
+              @click="openCurrentCv"
+            >
+              Ouvrir
+            </button>
+            <button
+              v-if="cvDocument?.fichier"
+              type="button"
+              class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              @click="downloadCurrentCv"
+            >
+              Télécharger
+            </button>
+          </div>
+        </div>
+        <input
+          ref="cvFileInputRef"
+          type="file"
+          class="hidden"
+          accept=".pdf,application/pdf"
+          @change="onCvFileSelected"
+        />
+      </article>
+
+      <div v-if="isLoading" class="grid gap-4 sm:grid-cols-3">
+        <article
+          v-for="index in 3"
+          :key="`documents-stats-skeleton-${index}`"
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div class="animate-pulse">
+            <div class="h-4 w-24 rounded bg-slate-200"></div>
+            <div class="mt-4 h-9 w-16 rounded bg-slate-200"></div>
+          </div>
+        </article>
+      </div>
+
+      <div v-else class="grid gap-4 sm:grid-cols-3">
         <article
           class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
         >

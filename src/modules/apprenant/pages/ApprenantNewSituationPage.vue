@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import Swal from "sweetalert2";
 import { showToast } from "../../../core/ui/toast";
@@ -34,12 +34,19 @@ const typeOptions: Array<{ key: UiSituationType; label: string }> = [
   { key: "STAGE", label: "Stage" },
   { key: "EMPLOI", label: "Emploi" },
   { key: "ALTERNANCE", label: "Alternance" },
+  { key: "RECHERCHE", label: "Recherche d'emploi" },
   { key: "PROJET", label: "Projet perso" },
 ];
 
 // Partner list — populated from API when available
 const partners = ref<EntreprisePartner[]>([]);
 const isLoadingPartners = ref(false);
+const requiresCompany = computed(
+  () => selectedType.value !== "PROJET" && selectedType.value !== "RECHERCHE",
+);
+const requiresStartDate = computed(
+  () => selectedType.value !== "PROJET" && selectedType.value !== "RECHERCHE",
+);
 
 const loadPartners = async () => {
   isLoadingPartners.value = true;
@@ -66,22 +73,22 @@ const loadPartners = async () => {
 const validateForm = () => {
   const isPartnerMode = companyMode.value === "PARTNER";
 
-  if (isPartnerMode && !form.entrepriseId) {
+  if (requiresCompany.value && isPartnerMode && !form.entrepriseId) {
     showToast("Veuillez sélectionner une entreprise partenaire", "error");
     return false;
   }
 
-  if (!isPartnerMode && !form.nomEntrepriseLibre.trim()) {
+  if (requiresCompany.value && !isPartnerMode && !form.nomEntrepriseLibre.trim()) {
     showToast("Le nom de l'entreprise externe est obligatoire", "error");
     return false;
   }
 
-  if (!form.dateDebut) {
+  if (requiresStartDate.value && !form.dateDebut) {
     showToast("La date de début est obligatoire", "error");
     return false;
   }
 
-  if (form.dateFin) {
+  if (form.dateDebut && form.dateFin) {
     const start = new Date(form.dateDebut);
     const end = new Date(form.dateFin);
     if (
@@ -106,22 +113,25 @@ const onSubmit = async () => {
       STAGE: "EN_STAGE",
       EMPLOI: "EN_EMPLOI",
       ALTERNANCE: "POURSUITE_ETUDES",
+      RECHERCHE: "RECHERCHE_EMPLOI",
       PROJET: "PROJET_PERSO",
     };
 
     const isPartnerMode = companyMode.value === "PARTNER";
     const payload: Parameters<typeof createSituationForApprenant>[0] = {
       statut: statutMap[selectedType.value],
-      dateDebut: form.dateDebut,
+      dateDebut: form.dateDebut || undefined,
       dateFin: form.dateFin || undefined,
       commentaire: form.commentaire.trim() || undefined,
     };
-    if (isPartnerMode) {
-      payload.entrepriseId = form.entrepriseId || undefined;
-    } else {
-      payload.nomEntrepriseLibre = form.nomEntrepriseLibre || undefined;
-      payload.secteurEntrepriseLibre = form.secteurEntrepriseLibre || undefined;
-      payload.adresseEntrepriseLibre = form.adresseEntrepriseLibre || undefined;
+    if (requiresCompany.value) {
+      if (isPartnerMode) {
+        payload.entrepriseId = form.entrepriseId || undefined;
+      } else {
+        payload.nomEntrepriseLibre = form.nomEntrepriseLibre || undefined;
+        payload.secteurEntrepriseLibre = form.secteurEntrepriseLibre || undefined;
+        payload.adresseEntrepriseLibre = form.adresseEntrepriseLibre || undefined;
+      }
     }
     await createSituationForApprenant(payload);
     showToast("Situation créée avec succès", "success");
@@ -162,6 +172,16 @@ const onSubmit = async () => {
 };
 
 const onCancel = () => router.push("/situations");
+
+watch(selectedType, (value) => {
+  // Recherche d'emploi et projet perso ne nécessitent pas d'entreprise.
+  if (value === "PROJET" || value === "RECHERCHE") {
+    form.entrepriseId = "";
+    form.nomEntrepriseLibre = "";
+    form.secteurEntrepriseLibre = "";
+    form.adresseEntrepriseLibre = "";
+  }
+});
 
 onMounted(() => {
   loadPartners();
@@ -298,6 +318,25 @@ onMounted(() => {
                   <line x1="8" y1="2" x2="8" y2="6" />
                   <line x1="3" y1="10" x2="21" y2="10" />
                 </svg>
+                <!-- Recherche: search -->
+                <svg
+                  v-else-if="opt.key === 'RECHERCHE'"
+                  class="h-5 w-5 transition-colors"
+                  :class="
+                    selectedType === opt.key
+                      ? 'text-white'
+                      : 'text-slate-400 group-hover:text-orange-500'
+                  "
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="16.65" y1="16.65" x2="21" y2="21" />
+                </svg>
                 <!-- Projet: lightbulb -->
                 <svg
                   v-else
@@ -345,13 +384,26 @@ onMounted(() => {
             </div>
             <p class="text-sm font-bold text-slate-800">Entreprise</p>
             <span
+              v-if="requiresCompany"
               class="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-500"
               >Requis</span
             >
+            <span
+              v-else
+              class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"
+              >Non requis</span
+            >
+          </div>
+
+          <div
+            v-if="!requiresCompany"
+            class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+          >
+            Cette situation ne nécessite pas d'entreprise.
           </div>
 
           <!-- Company mode toggle -->
-          <div class="mb-5 grid gap-3 sm:grid-cols-2">
+          <div v-else class="mb-5 grid gap-3 sm:grid-cols-2">
             <!-- Partenaire -->
             <button
               type="button"
@@ -456,7 +508,7 @@ onMounted(() => {
           </div>
 
           <!-- Partner select -->
-          <div v-if="companyMode === 'PARTNER'">
+          <div v-if="requiresCompany && companyMode === 'PARTNER'">
             <label class="mb-2 block text-sm font-semibold text-slate-700"
               >Sélectionner l'entreprise partenaire
               <span class="text-red-500">*</span></label
@@ -497,7 +549,7 @@ onMounted(() => {
           </div>
 
           <!-- External company fields -->
-          <div v-else class="grid gap-4 sm:grid-cols-3">
+          <div v-else-if="requiresCompany" class="grid gap-4 sm:grid-cols-3">
             <div class="sm:col-span-3">
               <label class="mb-2 block text-sm font-semibold text-slate-700"
                 >Nom de l'entreprise <span class="text-red-500">*</span></label
@@ -547,7 +599,11 @@ onMounted(() => {
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
               <label class="mb-2 block text-sm font-semibold text-slate-700"
-                >Date de début <span class="text-red-500">*</span></label
+                >Date de début
+                <span v-if="requiresStartDate" class="text-red-500">*</span>
+                <span v-else class="font-normal text-slate-400"
+                  >(optionnelle)</span
+                ></label
               >
               <input
                 v-model="form.dateDebut"
@@ -579,7 +635,11 @@ onMounted(() => {
                   <line x1="12" y1="8" x2="12" y2="12" />
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
-                Laisser vide si la situation est en cours
+                {{
+                  requiresStartDate
+                    ? "Laisser vide si la situation est en cours"
+                    : "Date facultative pour projet perso ou recherche d'emploi"
+                }}
               </p>
             </div>
           </div>

@@ -10,6 +10,7 @@ import {
 } from "../api/situations.api";
 import { validateSituation, rejectSituation } from "../api/validations.api";
 import EmptyState from "@/shared/components/EmptyState.vue";
+import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
 /**
  * État local des données
@@ -247,7 +248,11 @@ async function confirmReject() {
             >
               <span class="h-1.5 w-1.5 rounded-full bg-amber-300"></span>
               <span class="text-xs font-semibold"
-                >{{ items.length }} en attente de validation</span
+                >{{
+                  isLoading
+                    ? "Chargement des validations..."
+                    : `${items.length} en attente de validation`
+                }}</span
               >
             </div>
             <h2 class="text-2xl font-extrabold leading-tight sm:text-3xl">
@@ -258,7 +263,8 @@ async function confirmReject() {
             </p>
           </div>
           <div class="rounded-2xl bg-white/15 px-6 py-3 text-center shrink-0">
-            <p class="text-3xl font-extrabold">{{ filtered.length }}</p>
+            <p v-if="isLoading" class="h-9 w-16 animate-pulse rounded bg-white/20"></p>
+            <p v-else class="text-3xl font-extrabold">{{ filtered.length }}</p>
             <p class="text-xs text-orange-100 mt-0.5">
               situation{{ filtered.length > 1 ? "s" : "" }}
             </p>
@@ -379,17 +385,26 @@ async function confirmReject() {
       <section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-6 py-5">
           <h2 class="text-base font-bold text-slate-900">
-            {{ filtered.length }} situation{{ filtered.length > 1 ? "s" : "" }}
-            en attente
+            {{
+              isLoading
+                ? "Chargement des situations..."
+                : `${filtered.length} situation${filtered.length > 1 ? "s" : ""} en attente`
+            }}
           </h2>
           <p class="mt-0.5 text-sm text-slate-500">
             Cliquez sur Valider ou Rejeter pour traiter chaque situation
           </p>
         </div>
 
+        <PageLoadingState
+          v-if="isLoading"
+          compact
+          message="Chargement des situations en attente..."
+        />
+
         <!-- Empty state -->
         <EmptyState
-          v-if="filtered.length === 0"
+          v-else-if="filtered.length === 0"
           title="Tout est traité !"
           description="Aucune situation ne correspond à vos filtres"
         />

@@ -2,15 +2,19 @@
 import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
-import { getActivePromotion, type PromotionItem } from '@/modules/manager/api/promotions.api'
+import {
+  getActivePromotion,
+  type PromotionWithReferentiels,
+} from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 
 type Segment = { label: string; value: number; color: string; bg: string }
 
 // État
 const stats = ref<StatistiquesGlobales | null>(null)
-const activePromotion = ref<PromotionItem | null>(null)
+const activePromotion = ref<PromotionWithReferentiels | null>(null)
 const isLoading = ref(true)
+const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 
 // Computed pour les segments de statut
@@ -43,7 +47,22 @@ const statutSegments = computed<Segment[]>(() => {
 // Computed pour les données des référentiels (depuis l'API)
 const referentiels = computed(() => {
   if (!stats.value?.parReferentiel) return []
-  return stats.value.parReferentiel.map((r) => ({
+
+  // On limite l'affichage aux referentiels de la promotion active
+  // pour garder un perimetre manager coherent.
+  const activeReferentielIds = new Set(
+    (activePromotion.value?.referentiels ?? []).map(
+      ({ referentielId }) => referentielId,
+    ),
+  )
+
+  return stats.value.parReferentiel
+    .filter(
+      (referentiel) =>
+        activeReferentielIds.size === 0 ||
+        activeReferentielIds.has(referentiel.referentielId),
+    )
+    .map((r) => ({
     label: r.referentielNom,
     value: r.enEmploi,
     total: r.total,
@@ -80,51 +99,13 @@ async function loadStats() {
       getActivePromotion()
     ])
     
-    // Handle case where API returns null or empty
-    if (!statsData || typeof statsData !== 'object') {
-      stats.value = {
-        totalApprenants: 0,
-        totalSituations: 0,
-        enAttente: 0,
-        validees: 0,
-        tauxInsertion: 0,
-        parStatut: {
-          EN_EMPLOI: 0,
-          EN_STAGE: 0,
-          RECHERCHE_EMPLOI: 0,
-          PROJET_PERSO: 0,
-          POURSUITE_ETUDES: 0
-        },
-        parPromotion: [],
-        parReferentiel: [],
-        situationsRecentes: []
-      }
-    } else {
-      stats.value = statsData
-    }
-    
+    stats.value =
+      statsData && typeof statsData === 'object' ? statsData : null
     activePromotion.value = activePromo
+    hasLoaded.value = true
   } catch (e: any) {
     error.value = e.message || 'Erreur lors du chargement des statistiques'
     console.error('Erreur statistiques:', e)
-    // Initialize with empty stats to avoid "no data" message
-    stats.value = {
-      totalApprenants: 0,
-      totalSituations: 0,
-      enAttente: 0,
-      validees: 0,
-      tauxInsertion: 0,
-      parStatut: {
-        EN_EMPLOI: 0,
-        EN_STAGE: 0,
-        RECHERCHE_EMPLOI: 0,
-        PROJET_PERSO: 0,
-        POURSUITE_ETUDES: 0
-      },
-      parPromotion: [],
-      parReferentiel: [],
-      situationsRecentes: []
-    }
   } finally {
     isLoading.value = false
   }
@@ -139,25 +120,28 @@ onMounted(() => {
   <ManagerLayout title="Statistiques" active-menu="statistiques">
     <div class="space-y-5">
       <!-- Loading -->
-      <PageLoadingState v-if="isLoading" message="Chargement des statistiques..." />
+      <PageLoadingState
+        v-if="isLoading && !hasLoaded"
+        message="Chargement des statistiques..."
+      />
 
       <template v-else-if="stats">
         <!-- ── Active Promotion Banner ── -->
-        <div v-if="activePromotion" class="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 p-4 text-white">
+        <div v-if="activePromotion" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-800">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
                   <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                 </svg>
               </div>
               <div>
-                <p class="text-sm text-white/80">Promotion active</p>
+                <p class="text-sm text-slate-500">Promotion active</p>
                 <p class="text-lg font-bold">{{ activePromotion.nom }} ({{ activePromotion.annee }})</p>
               </div>
             </div>
-            <div class="text-sm text-white/80">
+            <div class="text-sm text-slate-500">
               Données filtrées automatiquement
             </div>
           </div>

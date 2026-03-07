@@ -12,8 +12,10 @@ export interface DocumentApi {
   id: string;
   type: string;
   fichier: string;
+  situationId?: string | null;
   dateUpload?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SituationApi {
@@ -67,6 +69,23 @@ export async function uploadDocument(
     headers: { "Content-Type": "multipart/form-data" },
   });
   return extractApiData<DocumentApi>(res) as DocumentApi;
+}
+
+/** Upload ou remplace le CV global de l'apprenant connecté */
+export async function uploadMyCv(file: File): Promise<DocumentApi> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await api.post("/apprenants/me/cv", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return extractApiData<DocumentApi>(res) as DocumentApi;
+}
+
+/** Récupère le CV global de l'apprenant connecté (si présent) */
+export async function getMyCv(): Promise<DocumentApi | null> {
+  const res = await api.get("/apprenants/me");
+  return extractApiData<{ cvDocument?: DocumentApi | null }>(res)?.cvDocument ?? null;
 }
 
 // ============================================

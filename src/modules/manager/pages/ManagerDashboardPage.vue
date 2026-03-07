@@ -10,6 +10,7 @@ import EmptyState from '@/shared/components/EmptyState.vue'
 const statsData = ref<StatistiquesGlobales | null>(null)
 const activePromotion = ref<PromotionItem | null>(null)
 const loading = ref(true)
+const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 
 // ── Fetch data on mount ──
@@ -25,6 +26,7 @@ onMounted(async () => {
     ])
     statsData.value = stats
     activePromotion.value = activePromo
+    hasLoaded.value = true
   } catch (e: any) {
     error.value = e.message || 'Erreur lors du chargement des données'
     console.error('Erreur:', e)
@@ -88,7 +90,13 @@ const stats = computed(() => {
 
 // ── Computed alerts from data ──
 const alerts = computed(() => {
-  const result = []
+  const result: Array<{
+    type: 'warning' | 'info' | 'success'
+    bg: string
+    iconColor: string
+    text: string
+    href: string
+  }> = []
   
   if (statsData.value?.enAttente && statsData.value.enAttente > 0) {
     result.push({
@@ -96,6 +104,7 @@ const alerts = computed(() => {
       bg: 'bg-amber-50',
       iconColor: 'text-amber-400',
       text: `${statsData.value.enAttente} situation${statsData.value.enAttente > 1 ? 's' : ''} en attente de validation`,
+      href: '/manager/statistiques',
     })
   }
   
@@ -107,6 +116,7 @@ const alerts = computed(() => {
         bg: 'bg-blue-50',
         iconColor: 'text-blue-400',
         text: `${enRecherche} apprenant${enRecherche > 1 ? 's' : ''} en recherche d'emploi`,
+        href: '/manager/apprenants',
       })
     }
   }
@@ -114,9 +124,10 @@ const alerts = computed(() => {
   if (statsData.value?.tauxInsertion && statsData.value.tauxInsertion >= 75) {
     result.push({
       type: 'success',
-      bg: 'bg-emerald-50',
-      iconColor: 'text-emerald-500',
+      bg: 'bg-slate-100',
+      iconColor: 'text-slate-500',
       text: `Taux d'insertion de ${statsData.value.tauxInsertion}% atteint`,
+      href: '/manager/statistiques',
     })
   }
   
@@ -204,7 +215,7 @@ const promotions = computed(() => {
     const taux = p.total > 0 ? Math.round((p.enEmploi / p.total) * 100) : 0
     const isActivePromotion = activePromotion.value?.id === p.promotionId
     const statusClass = isActivePromotion
-      ? 'border-emerald-400 text-emerald-600 bg-emerald-50'
+      ? 'border-slate-300 text-slate-700 bg-slate-100'
       : 'border-slate-200 text-slate-500 bg-slate-50'
     
     return {
@@ -223,7 +234,10 @@ const promotions = computed(() => {
   <ManagerLayout title="Tableau de bord Manager" active-menu="dashboard">
     <div class="space-y-5">
       <!-- Loading state -->
-      <PageLoadingState v-if="loading" message="Chargement des statistiques..." />
+      <PageLoadingState
+        v-if="loading && !hasLoaded"
+        message="Chargement des statistiques..."
+      />
 
       <!-- Error state -->
       <div v-else-if="error" class="rounded-2xl bg-red-50 p-4 text-red-600">
@@ -232,21 +246,21 @@ const promotions = computed(() => {
 
       <template v-else>
         <!-- ── Active Promotion Banner ── -->
-        <div v-if="activePromotion" class="rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 p-4 text-white">
+        <div v-if="activePromotion" class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-800">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
+              <div class="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-slate-200">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
                   <path d="M6 12v5c3 3 9 3 12 0v-5"/>
                 </svg>
               </div>
               <div>
-                <p class="text-sm text-white/80">Promotion active</p>
+                <p class="text-sm text-slate-500">Promotion active</p>
                 <p class="text-lg font-bold">{{ activePromotion.nom }} ({{ activePromotion.annee }})</p>
               </div>
             </div>
-            <div class="text-sm text-white/80">
+            <div class="text-sm text-slate-500">
               Données filtrées automatiquement
             </div>
           </div>
@@ -327,7 +341,7 @@ const promotions = computed(() => {
               </svg>
               <p class="text-sm text-slate-700 font-medium leading-snug">{{ alert.text }}</p>
             </div>
-            <button class="mt-3 text-sm font-semibold text-orange-500 hover:underline">Voir le détail →</button>
+            <a :href="alert.href" class="mt-3 inline-block text-sm font-semibold text-orange-500 hover:underline">Voir le détail →</a>
           </div>
         </div>
 
@@ -335,7 +349,7 @@ const promotions = computed(() => {
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
             <div class="flex items-center justify-between px-6 py-4">
               <h2 class="text-base font-bold text-slate-900">Activité récente</h2>
-              <button class="text-sm font-semibold text-orange-500 hover:underline">Voir tout</button>
+              <a href="/manager/statistiques" class="text-sm font-semibold text-orange-500 hover:underline">Voir tout</a>
             </div>
             <div class="divide-y divide-slate-100 px-6">
               <article v-for="item in activities" :key="item.id" class="flex items-start gap-4 py-4">
@@ -387,7 +401,7 @@ const promotions = computed(() => {
         <div v-if="promotions.length > 0" class="rounded-2xl border border-slate-200 bg-white shadow-sm px-6 py-5">
           <div class="flex items-center justify-between pb-4 border-b border-slate-100">
             <h2 class="text-base font-bold text-slate-900">Promotions</h2>
-            <button class="text-sm font-semibold text-orange-500 hover:underline">Voir les stats</button>
+            <a href="/manager/statistiques" class="text-sm font-semibold text-orange-500 hover:underline">Voir les stats</a>
           </div>
 
           <div class="mt-5 grid gap-4 sm:grid-cols-3">
@@ -409,11 +423,11 @@ const promotions = computed(() => {
               <template v-if="promo.hasTaux">
                 <div class="flex items-center justify-between text-sm mt-2 mb-2">
                   <span class="text-slate-500">Taux d'insertion</span>
-                  <span class="font-bold text-emerald-600">{{ promo.taux }}%</span>
+                  <span class="font-bold text-slate-700">{{ promo.taux }}%</span>
                 </div>
                 <div class="h-1.5 rounded-full bg-slate-100">
                   <div
-                    class="h-1.5 rounded-full bg-orange-500 transition-all"
+                    class="h-1.5 rounded-full bg-slate-700 transition-all"
                     :style="{ width: promo.taux + '%' }"
                   ></div>
                 </div>

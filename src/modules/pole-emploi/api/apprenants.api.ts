@@ -121,6 +121,14 @@ export type ApprenantDetail = {
     id: string;
     nom: string;
   };
+  cvDocument?: {
+    id: string;
+    type: string;
+    fichier: string;
+    dateUpload?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  } | null;
   situations: SituationItem[];
 };
 

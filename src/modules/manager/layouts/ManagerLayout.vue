@@ -69,11 +69,11 @@ const logout = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="flex min-h-screen">
+  <div class="h-screen overflow-hidden bg-slate-100 text-slate-900">
+    <div class="flex h-full">
 
       <!-- ── Sidebar ── -->
-      <aside class="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+      <aside class="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white lg:flex">
         <!-- Logo -->
         <div class="border-b border-slate-200 px-5 py-4">
           <div class="flex items-center gap-3">
@@ -149,7 +149,7 @@ const logout = async () => {
       </aside>
 
       <!-- ── Main ── -->
-      <div class="flex min-w-0 flex-1 flex-col">
+      <div class="flex min-w-0 min-h-0 flex-1 flex-col">
         <!-- Header -->
         <header class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
           <div class="flex items-center gap-3">
@@ -187,7 +187,7 @@ const logout = async () => {
         </header>
 
         <!-- Content -->
-        <main class="flex-1 p-5 lg:p-6">
+        <main class="flex-1 min-h-0 overflow-y-auto p-5 lg:p-6">
           <slot />
         </main>
       </div>

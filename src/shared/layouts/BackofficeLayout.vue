@@ -59,9 +59,9 @@ const logout = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-100 text-slate-900">
-    <div class="flex min-h-screen">
-      <aside class="hidden w-64 shrink-0 flex-col border-r border-slate-200 bg-white lg:flex">
+  <div class="h-screen overflow-hidden bg-slate-100 text-slate-900">
+    <div class="flex h-full">
+      <aside class="hidden w-64 shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white lg:flex">
         <div class="border-b border-slate-200 px-5 py-5">
           <div class="flex items-center gap-3">
             <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500">
@@ -122,7 +122,7 @@ const logout = async () => {
         </div>
       </aside>
 
-      <div class="flex min-w-0 flex-1 flex-col">
+      <div class="flex min-w-0 min-h-0 flex-1 flex-col">
         <header class="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 lg:px-8">
           <div class="flex items-center gap-3">
             <button class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 lg:hidden" @click="mobileOpen = true">
@@ -155,7 +155,7 @@ const logout = async () => {
           </div>
         </header>
 
-        <main class="flex-1 p-4 lg:p-6">
+        <main class="flex-1 min-h-0 overflow-y-auto p-4 lg:p-6">
           <slot />
         </main>
       </div>

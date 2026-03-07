@@ -9,6 +9,7 @@ import {
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 
 const loading = ref(true)
+const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 const selectedPromotionId = ref('')
 const stats = ref<CoachStatistiques | null>(null)
@@ -56,6 +57,7 @@ async function loadStats() {
     error.value = e.message || 'Erreur lors du chargement des statistiques coach'
   } finally {
     loading.value = false
+    hasLoaded.value = true
   }
 }
 
@@ -69,7 +71,11 @@ onMounted(loadStats)
         {{ error }}
       </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div v-if="!hasLoaded" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <PageLoadingState compact message="Chargement du périmètre coach..." />
+      </div>
+
+      <div v-else class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p class="text-sm font-semibold text-slate-900">

@@ -18,6 +18,13 @@ export type PromotionItem = {
   estActive?: boolean;
 };
 
+export type PromotionWithReferentiels = PromotionItem & {
+  referentiels?: Array<{
+    referentielId: string;
+    referentiel: ReferentielItem;
+  }>;
+};
+
 /**
  * Type représentant un référentiel
  */
@@ -67,7 +74,7 @@ export async function activatePromotion(id: string): Promise<PromotionItem> {
  *
  * @returns Promesse avec la promotion active ou null
  */
-export async function getActivePromotion(): Promise<PromotionItem | null> {
+export async function getActivePromotion(): Promise<PromotionWithReferentiels | null> {
   const res = await api.get("/promotions/active");
-  return extractApiData<PromotionItem | null>(res);
+  return extractApiData<PromotionWithReferentiels | null>(res);
 }

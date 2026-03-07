@@ -64,6 +64,7 @@ const referentielsList = ref<ReferentielOption[]>([]);
  * Statistiques globales (depuis API)
  */
 const globalStats = ref<StatistiquesGlobales | null>(null);
+const isGlobalStatsLoading = ref(true);
 
 /**
  * Indicateur de chargement
@@ -153,6 +154,7 @@ async function loadApprenants() {
  * Charge les statistiques globales depuis l'API
  */
 async function loadGlobalStats() {
+  isGlobalStatsLoading.value = true;
   try {
     globalStats.value = await getStatistiques({
       includePromotions: false,
@@ -161,6 +163,8 @@ async function loadGlobalStats() {
     });
   } catch (error) {
     console.error("Erreur chargement statistiques:", error);
+  } finally {
+    isGlobalStatsLoading.value = false;
   }
 }
 
@@ -223,7 +227,7 @@ function goToPage(page: number) {
             >
               <span class="h-1.5 w-1.5 rounded-full bg-green-400"></span>
               <span class="text-xs font-semibold"
-                >{{ globalStats?.totalApprenants ?? 0 }} apprenants
+                >{{ isGlobalStatsLoading ? "Chargement..." : `${globalStats?.totalApprenants ?? 0} apprenants` }}
                 enregistrés</span
               >
             </div>
@@ -236,13 +240,15 @@ function goToPage(page: number) {
           </div>
           <div class="flex shrink-0 gap-3">
             <div class="rounded-2xl bg-white/15 px-5 py-3 text-center">
-              <p class="text-2xl font-extrabold">
+              <p v-if="isGlobalStatsLoading" class="h-8 w-16 animate-pulse rounded bg-white/20"></p>
+              <p v-else class="text-2xl font-extrabold">
                 {{ globalStats?.totalApprenants ?? 0 }}
               </p>
               <p class="text-xs text-orange-100 mt-0.5">Total</p>
             </div>
             <div class="rounded-2xl bg-white/15 px-5 py-3 text-center">
-              <p class="text-2xl font-extrabold">
+              <p v-if="isGlobalStatsLoading" class="h-8 w-16 animate-pulse rounded bg-white/20"></p>
+              <p v-else class="text-2xl font-extrabold">
                 {{ globalStats?.enAttente ?? 0 }}
               </p>
               <p class="text-xs text-orange-100 mt-0.5">En attente</p>
@@ -253,6 +259,19 @@ function goToPage(page: number) {
 
       <!-- ── Stat cards ── -->
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <template v-if="isGlobalStatsLoading">
+          <article
+            v-for="index in 4"
+            :key="`stats-skeleton-${index}`"
+            class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            <div class="animate-pulse">
+              <div class="h-3 w-28 rounded bg-slate-200"></div>
+              <div class="mt-3 h-8 w-14 rounded bg-slate-200"></div>
+            </div>
+          </article>
+        </template>
+        <template v-else>
         <article
           class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
         >
@@ -381,6 +400,7 @@ function goToPage(page: number) {
             </svg>
           </div>
         </article>
+        </template>
       </div>
 
       <!-- ── Table section ── -->
@@ -465,7 +485,10 @@ function goToPage(page: number) {
 
         <!-- Table count -->
         <div class="px-6 py-3 border-b border-slate-50">
-          <p class="text-xs font-semibold text-slate-400">
+          <p v-if="isLoading" class="text-xs font-semibold text-slate-400">
+            Chargement des apprenants...
+          </p>
+          <p v-else class="text-xs font-semibold text-slate-400">
             {{ filtered.length }} apprenant{{
               filtered.length > 1 ? "s" : ""
             }}
@@ -510,7 +533,16 @@ function goToPage(page: number) {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-if="filtered.length === 0">
+              <tr v-if="isLoading">
+                <td colspan="6" class="px-5 py-6">
+                  <div class="space-y-3 animate-pulse">
+                    <div class="h-10 rounded bg-slate-100"></div>
+                    <div class="h-10 rounded bg-slate-100"></div>
+                    <div class="h-10 rounded bg-slate-100"></div>
+                  </div>
+                </td>
+              </tr>
+              <tr v-else-if="filtered.length === 0">
                 <td
                   colspan="6"
                   class="px-6 py-10 text-center text-sm text-slate-400"

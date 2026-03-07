@@ -13,6 +13,7 @@ type Segment = { label: string; value: number; color: string; bg: string };
 // État
 const stats = ref<StatistiquesGlobales | null>(null);
 const isLoading = ref(true);
+const hasLoaded = ref(false);
 
 // Computed pour les segments de statut
 const statutSegments = computed<Segment[]>(() => {
@@ -86,6 +87,7 @@ async function loadStats() {
       includeSituationsRecentes: false,
     });
     stats.value = data;
+    hasLoaded.value = true;
   } catch (error: any) {
     showToast(
       error?.response?.data?.message || "Erreur de chargement des statistiques",
@@ -105,7 +107,10 @@ onMounted(() => {
   <BackofficeLayout title="Statistiques" active-menu="statistiques">
     <div class="space-y-5">
       <!-- Loading -->
-      <PageLoadingState v-if="isLoading" message="Chargement des statistiques..." />
+      <PageLoadingState
+        v-if="isLoading && !hasLoaded"
+        message="Chargement des statistiques..."
+      />
 
       <template v-else-if="stats">
         <!-- ── Hero Banner ── -->

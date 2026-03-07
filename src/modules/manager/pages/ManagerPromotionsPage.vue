@@ -6,6 +6,7 @@ import {
   type PromotionItem,
   activatePromotion,
 } from "@/modules/manager/api/promotions.api";
+import { getStatistiques } from "@/modules/manager/api/statistiques.api";
 import PageLoadingState from '@/shared/components/PageLoadingState.vue';
 import EmptyState from '@/shared/components/EmptyState.vue';
 
@@ -17,6 +18,7 @@ interface PromotionWithStats extends PromotionItem {
 
 const promotions = ref<PromotionWithStats[]>([]);
 const loading = ref(true);
+const hasLoaded = ref(false);
 const activatingId = ref<string | null>(null);
 const error = ref<string | null>(null);
 
@@ -24,15 +26,33 @@ async function fetchData() {
   loading.value = true;
   error.value = null;
   try {
-    const promosData = await getPromotions();
+    const [promosData, statsData] = await Promise.all([
+      getPromotions(),
+      getStatistiques({
+        includePromotions: true,
+        includeReferentiels: false,
+        includeSituationsRecentes: false,
+      }),
+    ]);
 
-    // Cette page ne depend plus des statistiques globales.
+    const statsByPromotion = new Map(
+      statsData.parPromotion.map((promotion) => [promotion.promotionId, promotion]),
+    );
+
     promotions.value = promosData.map((p: PromotionItem) => ({
       ...p,
-      totalApprenants: 0,
-      enEmploi: 0,
-      tauxInsertion: 0,
+      totalApprenants: statsByPromotion.get(p.id)?.total ?? 0,
+      enEmploi: statsByPromotion.get(p.id)?.enEmploi ?? 0,
+      tauxInsertion:
+        (statsByPromotion.get(p.id)?.total ?? 0) > 0
+          ? Math.round(
+              (((statsByPromotion.get(p.id)?.enEmploi ?? 0) /
+                (statsByPromotion.get(p.id)?.total ?? 1)) *
+                100),
+            )
+          : 0,
     }));
+    hasLoaded.value = true;
   } catch (e: any) {
     error.value = e.message || "Erreur lors du chargement des promotions";
     console.error("Erreur:", e);
@@ -70,7 +90,7 @@ onMounted(fetchData);
       </div>
 
       <!-- Loading -->
-      <PageLoadingState v-if="loading" />
+      <PageLoadingState v-if="loading && !hasLoaded" />
 
       <div
         v-else-if="error"
@@ -94,14 +114,14 @@ onMounted(fetchData);
           :class="[
             'relative rounded-2xl border-2 p-6 shadow-sm transition-all',
             promo.estActive
-              ? 'border-emerald-500 bg-emerald-50'
+              ? 'border-slate-300 bg-slate-50'
               : 'border-slate-200 bg-white hover:border-orange-300',
           ]"
         >
           <!-- Active Badge -->
           <div
             v-if="promo.estActive"
-            class="absolute -top-3 left-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-bold text-white"
+            class="absolute -top-3 left-4 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white shadow-sm"
           >
             ACTIVE
           </div>
@@ -121,7 +141,7 @@ onMounted(fetchData);
               <p class="text-xs text-slate-500">Apprenants</p>
             </div>
             <div class="text-center">
-              <p class="text-2xl font-bold text-emerald-600">
+              <p class="text-2xl font-bold text-slate-700">
                 {{ promo.tauxInsertion }}%
               </p>
               <p class="text-xs text-slate-500">Emploi</p>
@@ -143,7 +163,7 @@ onMounted(fetchData);
           </button>
           <div
             v-else
-            class="w-full rounded-xl bg-emerald-500 py-2.5 text-center font-semibold text-white"
+            class="w-full rounded-xl bg-slate-900 py-2.5 text-center font-semibold text-white"
           >
             ✓ Promotion active
           </div>

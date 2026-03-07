@@ -15,6 +15,7 @@ import EmptyState from '@/shared/components/EmptyState.vue'
 const router = useRouter()
 const route = useRoute()
 const loading = ref(true)
+const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 const items = ref<CoachApprenantListItem[]>([])
 const scope = ref<CoachScope | null>(null)
@@ -51,6 +52,7 @@ async function loadApprenants() {
     error.value = e.message || 'Erreur lors du chargement des apprenants'
   } finally {
     loading.value = false
+    hasLoaded.value = true
   }
 }
 
@@ -81,7 +83,11 @@ onMounted(loadApprenants)
         {{ error }}
       </div>
 
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div v-if="!hasLoaded" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <PageLoadingState compact message="Initialisation des filtres..." />
+      </div>
+
+      <div v-else class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="grid gap-4 lg:grid-cols-[1fr_280px_220px]">
           <div>
             <label class="mb-2 block text-sm font-medium text-slate-700">Recherche</label>
@@ -147,7 +153,7 @@ onMounted(loadApprenants)
       <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-6 py-5">
           <h2 class="text-base font-bold text-slate-900">
-            {{ scope?.referentiel.nom || 'Référentiel' }} · apprenants
+            {{ hasLoaded ? (scope?.referentiel.nom || 'Référentiel') : 'Chargement...' }} · apprenants
           </h2>
           <p class="mt-1 text-sm text-slate-500">
             Le coach ne voit que les apprenants de son référentiel et de la promotion consultée.

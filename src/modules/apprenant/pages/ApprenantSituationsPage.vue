@@ -129,7 +129,20 @@ const statusChipClass = (chip: 'Tous statuts' | UiStatus) =>
       </div>
 
       <!-- ── Stats ── -->
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div v-if="isLoading" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <article
+          v-for="index in 4"
+          :key="`situations-stats-skeleton-${index}`"
+          class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        >
+          <div class="animate-pulse">
+            <div class="h-4 w-24 rounded bg-slate-200"></div>
+            <div class="mt-4 h-9 w-16 rounded bg-slate-200"></div>
+          </div>
+        </article>
+      </div>
+
+      <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <article class="group flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
           <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-100 transition-transform group-hover:scale-110">
             <svg class="h-5 w-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -226,7 +239,7 @@ const statusChipClass = (chip: 'Tous statuts' | UiStatus) =>
       </div>
 
       <!-- ── Count ── -->
-      <p class="text-sm text-slate-500">
+      <p v-if="!isLoading" class="text-sm text-slate-500">
         <span class="font-bold text-slate-800">{{ filtered.length }}</span> situation{{ filtered.length > 1 ? 's' : '' }} trouvée{{ filtered.length > 1 ? 's' : '' }}
       </p>
 

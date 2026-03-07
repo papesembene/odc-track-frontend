@@ -33,7 +33,7 @@ export interface SituationApi {
 }
 
 // Type pour l'UI (affichage)
-export type UiType = "Stage" | "Emploi" | "Alternance" | "Projet";
+export type UiType = "Stage" | "Emploi" | "Alternance" | "Projet" | "Recherche";
 export type UiStatus = "En cours" | "En attente" | "Validée" | "Rejetée";
 
 export interface SituationItem {
@@ -70,7 +70,7 @@ export function mapType(statut: SituationStatut): UiType {
   if (statut === "EN_EMPLOI") return "Emploi";
   if (statut === "PROJET_PERSO") return "Projet";
   if (statut === "POURSUITE_ETUDES") return "Alternance";
-  return "Emploi";
+  return "Recherche";
 }
 
 /** Convertit le statut API en statut UI */
@@ -121,7 +121,12 @@ export function formatDate(value?: string | null): string {
 // TYPES POUR L'UI
 // ============================================
 
-export type UiSituationType = "STAGE" | "EMPLOI" | "ALTERNANCE" | "PROJET";
+export type UiSituationType =
+  | "STAGE"
+  | "EMPLOI"
+  | "ALTERNANCE"
+  | "PROJET"
+  | "RECHERCHE";
 export type CompanyMode = "PARTNER" | "EXTERNAL";
 
 export interface EntreprisePartner {
@@ -155,7 +160,7 @@ export async function getEntreprises(
 /** Crée une nouvelle situation pour l'apprenant connecté */
 export async function createSituationForApprenant(payload: {
   statut: string;
-  dateDebut: string;
+  dateDebut?: string;
   dateFin?: string;
   commentaire?: string;
   entrepriseId?: string;

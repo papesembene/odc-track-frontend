@@ -2,13 +2,17 @@
 import { ref, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getCoaches, createCoach, type CoachItem, type CreateCoachDto } from '@/modules/manager/api/coaches.api'
-import { getReferentiels, type ReferentielItem } from '@/modules/manager/api/promotions.api'
+import {
+  getActivePromotion,
+  type ReferentielItem,
+} from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 
 // ── State ──
 const coaches = ref<CoachItem[]>([])
 const referentiels = ref<ReferentielItem[]>([])
 const loading = ref(true)
+const hasLoaded = ref(false)
 const referentielsLoading = ref(false)
 const error = ref<string | null>(null)
 const showModal = ref(false)
@@ -30,8 +34,7 @@ async function fetchCoaches() {
   error.value = null
   try {
     coaches.value = await getCoaches()
-    console.log('coach',coaches);
-    
+    hasLoaded.value = true
   } catch (e: any) {
     error.value = e.message || 'Erreur lors du chargement des coaches'
     console.error('Erreur:', e)
@@ -43,9 +46,36 @@ async function fetchCoaches() {
 // ── Fetch referentiels ──
 async function fetchReferentiels() {
   referentielsLoading.value = true
+  formError.value = null
+
   try {
-    referentiels.value = await getReferentiels()
+    const activePromotion = await getActivePromotion()
+
+    if (!activePromotion) {
+      referentiels.value = []
+      form.value.referentielId = ''
+      formError.value =
+        'Aucune promotion active. Activez une promotion avant de creer un coach.'
+      return
+    }
+
+    // Le manager ne peut assigner un coach qu a un referentiel
+    // present dans la promotion active.
+    referentiels.value = (activePromotion.referentiels ?? []).map(
+      ({ referentiel }) => referentiel,
+    )
+
+    if (referentiels.value.length === 0) {
+      form.value.referentielId = ''
+      formError.value =
+        'La promotion active ne contient aucun referentiel assignable.'
+      return
+    }
   } catch (e: any) {
+    referentiels.value = []
+    form.value.referentielId = ''
+    formError.value =
+      e.message || 'Erreur lors du chargement du referentiel de la promotion active'
     console.error('Erreur chargement référentiels:', e)
   } finally {
     referentielsLoading.value = false
@@ -113,7 +143,7 @@ onMounted(fetchCoaches)
       </div>
 
       <!-- Loading -->
-      <PageLoadingState v-if="loading" />
+      <PageLoadingState v-if="loading && !hasLoaded" />
 
       <!-- Error -->
       <div v-else-if="error" class="rounded-2xl bg-red-50 p-4 text-red-600">
@@ -228,16 +258,25 @@ onMounted(fetchCoaches)
               <select
                 v-model="form.referentielId"
                 required
-                :disabled="referentielsLoading"
+                :disabled="referentielsLoading || referentiels.length === 0"
                 class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
               >
                 <option value="" disabled>
-                  {{ referentielsLoading ? 'Chargement...' : 'Sélectionner un référentiel' }}
+                  {{
+                    referentielsLoading
+                      ? 'Chargement...'
+                      : referentiels.length === 0
+                        ? 'Aucun referentiel disponible'
+                        : 'Sélectionner un référentiel'
+                  }}
                 </option>
                 <option v-for="ref in referentiels" :key="ref.id" :value="ref.id">
                   {{ ref.nom }}
                 </option>
               </select>
+              <p class="mt-1 text-xs text-slate-500">
+                Seuls les referentiels de la promotion active peuvent etre assignes a un coach.
+              </p>
             </div>
 
             <div>

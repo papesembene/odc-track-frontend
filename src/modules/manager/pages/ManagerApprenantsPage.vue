@@ -4,6 +4,10 @@ import { useRouter } from 'vue-router'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getApprenants, type ApprenantListItem } from '@/modules/manager/api/apprenants.api'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
+import {
+  getActivePromotion,
+  type PromotionWithReferentiels,
+} from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 
 // Router instance
@@ -28,6 +32,7 @@ interface ApprenantUI {
 const apprenantsList = ref<ApprenantListItem[]>([])
 const statsData = ref<StatistiquesGlobales | null>(null)
 const loading = ref(true)
+const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 const totalItems = ref(0)
 
@@ -42,13 +47,14 @@ onMounted(async () => {
   try {
     // Fetch apprenants and stats in parallel
     // Note: Backend already filters apprenants by active promotion for MANAGER role
-    const [apprenantsResult, stats] = await Promise.all([
+    const [apprenantsResult, stats, activePromotion] = await Promise.all([
       getApprenants({ limit: 100 }),
       getStatistiques({
         includePromotions: false,
         includeReferentiels: true,
         includeSituationsRecentes: false,
       }),
+      getActivePromotion(),
     ])
     
     // Set apprenants (already filtered by active promotion)
@@ -58,10 +64,11 @@ onMounted(async () => {
     // Set stats
     statsData.value = stats
     
-    // Extract referentiels from stats (they are already filtered by active promotion)
-    if (stats?.parReferentiel) {
-      refs.value = stats.parReferentiel.map((r: any) => ({ id: r.referentielId, nom: r.referentielNom }))
-    }
+    // Le filtre référentiel du manager doit proposer uniquement
+    // les référentiels de la promotion active.
+    refs.value = ((activePromotion as PromotionWithReferentiels | null)?.referentiels ?? [])
+      .map(({ referentiel }) => ({ id: referentiel.id, nom: referentiel.nom }))
+    hasLoaded.value = true
   } catch (e: any) {
     error.value = e.message || 'Erreur lors du chargement des données'
     console.error('Erreur:', e)
@@ -109,8 +116,8 @@ const filtered = computed(() =>
   apprenants.value.filter(a => {
     const q = search.value.toLowerCase()
     const matchQ = !q || a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
-    // Filter by referentiel name only (promo is already filtered by backend)
-    const matchR = !refFil.value || refFil.value === 'Tous les référentiels' || a.referentiel === refFil.value
+    // Filtre par identifiant référentiel (plus robuste que le nom).
+    const matchR = !refFil.value || a.referentielId === refFil.value
     return matchQ && matchR
   })
 )
@@ -147,7 +154,10 @@ const statusClass = (s: ApprenantStatus) => {
   <ManagerLayout title="Apprenants" active-menu="apprenants">
     <div class="space-y-5">
       <!-- Loading state -->
-      <PageLoadingState v-if="loading" message="Chargement des apprenants..." />
+      <PageLoadingState
+        v-if="loading && !hasLoaded"
+        message="Chargement des apprenants..."
+      />
 
       <!-- Error state -->
       <div v-else-if="error" class="rounded-2xl bg-red-50 p-4 text-red-600">
@@ -210,7 +220,7 @@ const statusClass = (s: ApprenantStatus) => {
             class="rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-orange-400 cursor-pointer"
           >
             <option value="">Tous les référentiels</option>
-            <option v-for="r in refs" :key="r.id" :value="r.nom">{{ r.nom }}</option>
+            <option v-for="r in refs" :key="r.id" :value="r.id">{{ r.nom }}</option>
           </select>
         </div>
 

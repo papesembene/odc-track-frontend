@@ -8,6 +8,7 @@ import {
   type SituationItem,
 } from "../api/apprenants.api";
 import { getDocumentsByApprenant, type Document } from "../api/documents.api";
+import { extractFileName, resolveFileUrl } from "@/modules/apprenant/api/documents.api";
 import { showToast } from "../../../core/ui/toast";
 import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
@@ -87,6 +88,9 @@ const documentsLoading = ref(false);
 const filteredDocuments = computed(() => {
   return documents.value.filter((d) => d.situationId);
 });
+
+// CV global (hors situation) renvoyé dans le détail apprenant.
+const cvDocument = computed(() => apprenantData.value?.cvDocument ?? null);
 
 /**
  * Computed: whether to show the documents tab
@@ -494,6 +498,25 @@ onMounted(() => {
             ></div>
             <span class="ml-2 text-sm text-slate-500">Chargement...</span>
           </div>
+          <article
+            v-else-if="cvDocument?.fichier"
+            class="col-span-full flex items-center justify-between rounded-2xl border border-orange-200 bg-orange-50 p-4"
+          >
+            <div>
+              <p class="text-sm font-bold text-slate-900">CV apprenant</p>
+              <p class="mt-1 text-xs text-slate-500">
+                {{ extractFileName(cvDocument.fichier) }}
+              </p>
+            </div>
+            <a
+              :href="resolveFileUrl(cvDocument.fichier)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center rounded-xl border border-orange-300 px-3 py-2 text-sm font-semibold text-orange-600 hover:bg-white"
+            >
+              Ouvrir le CV
+            </a>
+          </article>
           <div
             v-else-if="filteredDocuments.length === 0 && !documentsLoading"
             class="col-span-full py-8 text-center text-slate-500"

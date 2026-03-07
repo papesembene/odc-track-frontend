@@ -97,7 +97,23 @@ export type CoachApprenantDetail = {
       nom: string;
       secteur: string | null;
     } | null;
+    documents: Array<{
+      id: string;
+      type: string;
+      fichier: string;
+      dateUpload?: string | null;
+      createdAt?: string;
+      situationId: string;
+    }>;
   }>;
+  cvDocument?: {
+    id: string;
+    type: string;
+    fichier: string;
+    dateUpload?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+  } | null;
   scope: CoachScope;
 };
 
