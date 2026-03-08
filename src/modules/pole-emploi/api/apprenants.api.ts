@@ -144,3 +144,20 @@ export async function getApprenantById(
   const res = await api.get(`/apprenants/${id}`);
   return res?.data?.data || null;
 }
+
+export async function exportApprenantsXlsx(
+  query?: ApprenantsQueryParams,
+): Promise<Blob> {
+  const params = new URLSearchParams();
+  if (query?.search) params.append("search", query.search);
+  if (query?.promotionId) params.append("promotionId", query.promotionId);
+  if (query?.referentielId) params.append("referentielId", query.referentielId);
+
+  const queryString = params.toString();
+  const url = queryString
+    ? `/apprenants/export/xlsx?${queryString}`
+    : "/apprenants/export/xlsx";
+
+  const res = await api.get(url, { responseType: "blob" });
+  return res.data as Blob;
+}

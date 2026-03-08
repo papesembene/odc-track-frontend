@@ -2,13 +2,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
-import { getApprenants, type ApprenantListItem } from '@/modules/manager/api/apprenants.api'
+import {
+  exportApprenantsXlsx,
+  getApprenants,
+  type ApprenantListItem,
+} from '@/modules/manager/api/apprenants.api'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
 import {
   getActivePromotion,
   type PromotionWithReferentiels,
 } from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
+import { showToast } from '@/core/ui/toast'
 
 // Router instance
 const router = useRouter()
@@ -35,6 +40,7 @@ const loading = ref(true)
 const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 const totalItems = ref(0)
+const exportLoading = ref(false)
 
 // ── Filters (from active promotion) ──
 const refs = ref<{ id: string; nom: string }[]>([])
@@ -148,6 +154,33 @@ const statusClass = (s: ApprenantStatus) => {
     case 'Rejetée'   : return 'border border-red-400     text-red-600     bg-red-50'
   }
 }
+
+async function downloadExport() {
+  exportLoading.value = true
+
+  try {
+    const blob = await exportApprenantsXlsx({
+      search: search.value || undefined,
+      referentielId: refFil.value || undefined,
+    })
+
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `apprenants-manager-${new Date().toISOString().slice(0, 10)}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (e: any) {
+    showToast(
+      e?.response?.data?.message || "Erreur lors de l'export des apprenants",
+      'error',
+    )
+  } finally {
+    exportLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -222,6 +255,20 @@ const statusClass = (s: ApprenantStatus) => {
             <option value="">Tous les référentiels</option>
             <option v-for="r in refs" :key="r.id" :value="r.id">{{ r.nom }}</option>
           </select>
+
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            :disabled="exportLoading"
+            @click="downloadExport"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {{ exportLoading ? 'Export...' : 'Exporter en XLSX' }}
+          </button>
         </div>
 
         <!-- ── Apprenants grid ── -->
