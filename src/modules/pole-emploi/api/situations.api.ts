@@ -4,6 +4,7 @@ import { extractItems } from "./helpers";
 type PromotionOption = {
   id: string;
   nom: string;
+  annee?: number;
   createdAt?: string;
 };
 
@@ -51,6 +52,16 @@ export async function getSituationsEnAttente(): Promise<PendingSituation[]> {
 export async function getPromotions(): Promise<PromotionOption[]> {
   const res = await api.get("/promotions");
   return extractItems<PromotionOption>(res);
+}
+
+/**
+ * Récupère la promotion active.
+ * Le pôle emploi l'utilise comme filtre initial, sans empêcher ensuite
+ * la consultation d'une autre promotion.
+ */
+export async function getActivePromotion(): Promise<PromotionOption | null> {
+  const res = await api.get("/promotions/active");
+  return res?.data?.data || null;
 }
 
 /**

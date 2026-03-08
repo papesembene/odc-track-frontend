@@ -4,6 +4,7 @@ import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import ValidationCard from "@/modules/pole-emploi/components/ValidationCard.vue";
 import { showToast } from "../../../core/ui/toast";
 import {
+  getActivePromotion,
   getSituationsEnAttente,
   getPromotions,
   getReferentiels,
@@ -23,6 +24,7 @@ const promotionsList = ref<{ id: string; nom: string }[]>([]);
 const referentielsList = ref<{ id: string; nom: string }[]>([]);
 // Indicateur de chargement
 const isLoading = ref(true);
+const activePromotion = ref<{ id: string; nom: string; annee?: number } | null>(null);
 
 /**
  * Charge les filtres (promotions et référentiels) depuis l'API.
@@ -37,6 +39,11 @@ async function loadFilters() {
     ]);
     promotionsList.value = promData;
     referentielsList.value = refData;
+    activePromotion.value = await getActivePromotion();
+
+    if (!filterPromotion.value && activePromotion.value?.nom) {
+      filterPromotion.value = activePromotion.value.nom;
+    }
   } catch (error) {
     console.error("Erreur lors du chargement des filtres:", error);
   }
@@ -60,8 +67,9 @@ async function loadValidations() {
       initials:
         `${item.apprenant.user.prenom[0]}${item.apprenant.user.nom[0]}`.toUpperCase(),
       status: "En attente",
-      // Type de situation: STAGE, ALTERNANCE, EMPLOI, MISSION, ENTREPRISE_LIBRE
-      type: item.statut,
+      // On garde le code backend pour les filtres et un libellé lisible pour l'UI.
+      type: formatSituationType(item.statut),
+      typeCode: item.statut,
       // Nom de l'entreprise (ou nom libre si pas d'entreprise enregistrée)
       entreprise: item.entreprise?.nom || item.nomEntrepriseLibre || "-",
       promotion: item.apprenant.promotion.nom,
@@ -96,6 +104,7 @@ type ValidationItem = {
   initials: string;
   status: string;
   type: string;
+  typeCode: string;
   entreprise: string;
   promotion: string;
   referentiel: string;
@@ -113,23 +122,26 @@ const searchQuery = ref("");
 const filterPromotion = ref("");
 // Filtre par référentiel (nom du référentiel)
 const filterReferentiel = ref("");
-// Filtre par type de situation (STAGE, ALTERNANCE, etc.)
+// Filtre par type de situation
 const filterType = ref("");
 
 /**
- * Correspondance entre les valeurs d'enum et les labels affichés
- * Permet d'afficher "Stage" au lieu de "STAGE" dans l'UI
+ * Correspondance avec les vrais statuts backend.
  */
 const typeLabels: Record<string, string> = {
-  STAGE: "Stage",
-  ALTERNANCE: "Alternance",
-  EMPLOI: "Emploi",
-  MISSION: "Mission",
-  ENTREPRISE_LIBRE: "Entreprise libre",
+  EN_STAGE: "Stage",
+  EN_EMPLOI: "Emploi",
+  RECHERCHE_EMPLOI: "Recherche d'emploi",
+  PROJET_PERSO: "Projet perso",
+  POURSUITE_ETUDES: "Poursuite d'études",
 };
 
 // Liste des types disponibles pour le filtre
 const types = Object.keys(typeLabels);
+
+function formatSituationType(type: string): string {
+  return typeLabels[type] || type;
+}
 
 /**
  * Computed: Liste des promotions pour le dropdown
@@ -162,7 +174,7 @@ const filtered = computed(() => {
       return false;
 
     // Filtre par type de situation
-    if (filterType.value && item.type !== filterType.value) return false;
+    if (filterType.value && item.typeCode !== filterType.value) return false;
 
     return true;
   });
@@ -260,6 +272,13 @@ async function confirmReject() {
             </h2>
             <p class="mt-1 text-sm text-orange-100">
               Gérez les situations professionnelles soumises
+            </p>
+            <p class="mt-2 text-xs font-medium text-orange-100/90">
+              {{
+                activePromotion
+                  ? `Filtre initial : promotion active ${activePromotion.nom}${activePromotion.annee ? ` (${activePromotion.annee})` : ""}`
+                  : "Aucune promotion active détectée"
+              }}
             </p>
           </div>
           <div class="rounded-2xl bg-white/15 px-6 py-3 text-center shrink-0">

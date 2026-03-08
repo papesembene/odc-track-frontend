@@ -113,14 +113,8 @@ onMounted(loadStats)
               class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-orange-400"
               @change="loadStats"
             >
-              <option value="">
-                {{
-                  loading
-                    ? 'Chargement des promotions...'
-                    : activePromotion
-                      ? `Promotion active - ${activePromotion.nom} (${activePromotion.annee})`
-                      : 'Promotion active'
-                }}
+              <option v-if="promotions.length === 0" value="">
+                {{ loading ? 'Chargement des promotions...' : 'Aucune promotion disponible' }}
               </option>
               <option v-for="promotion in promotions" :key="promotion.id" :value="promotion.id">
                 {{ promotion.nom }} ({{ promotion.annee }}){{ promotion.estActive ? ' · Active' : '' }}

@@ -5,22 +5,22 @@ import {
   Plus,
   Users,
   Zap,
+  Pencil,
   Link2,
   CheckCircle2,
   BookOpen,
   CalendarDays,
-  Info,
   X,
   Loader2,
   RefreshCw,
   TrendingUp,
-  Briefcase,
 } from 'lucide-vue-next'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import {
   activatePromotion,
   createPromotion,
   getPromotions,
+  updatePromotion,
   type PromotionInput,
   type PromotionItem,
 } from '@/modules/manager/api/promotions.api'
@@ -47,6 +47,7 @@ const saving = ref(false)
 const error = ref<string | null>(null)
 const formError = ref<string | null>(null)
 const showModal = ref(false)
+const editingPromotionId = ref<string | null>(null)
 
 const form = ref<PromotionInput>({
   nom: '',
@@ -130,12 +131,29 @@ function openCreateModal() {
     annee: new Date().getFullYear(),
     referentielIds: [],
   }
+  editingPromotionId.value = null
+  formError.value = null
+  showModal.value = true
+}
+
+function openEditModal(promotion: PromotionWithStats) {
+  // Cette édition permet surtout d'ajouter rapidement un nouveau référentiel
+  // à une promotion existante, notamment la promotion active.
+  form.value = {
+    nom: promotion.nom,
+    annee: promotion.annee,
+    referentielIds: (promotion.referentiels ?? []).map(
+      (link) => link.referentielId,
+    ),
+  }
+  editingPromotionId.value = promotion.id
   formError.value = null
   showModal.value = true
 }
 
 function closeModal() {
   showModal.value = false
+  editingPromotionId.value = null
   formError.value = null
 }
 
@@ -163,15 +181,25 @@ async function submitPromotion() {
   formError.value = null
 
   try {
-    await createPromotion({
+    const payload = {
       nom: form.value.nom.trim(),
       annee: Number(form.value.annee),
       referentielIds: form.value.referentielIds,
-    })
+    }
+
+    if (editingPromotionId.value) {
+      await updatePromotion(editingPromotionId.value, payload)
+    } else {
+      await createPromotion(payload)
+    }
     closeModal()
     await fetchData()
   } catch (e: any) {
-    formError.value = e.message || 'Erreur lors de la création de la promotion'
+    formError.value =
+      e.message ||
+      (editingPromotionId.value
+        ? 'Erreur lors de la modification de la promotion'
+        : 'Erreur lors de la création de la promotion')
   } finally {
     saving.value = false
   }
@@ -358,25 +386,35 @@ onMounted(fetchData)
               </div>
             </div>
 
-            <!-- Right: action -->
+            <!-- Right: actions -->
             <div class="shrink-0">
-              <button
-                v-if="!promo.estActive"
-                type="button"
-                :disabled="activatingId === promo.id"
-                class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-all hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50"
-                @click="handleActivate(promo.id)"
-              >
-                <Loader2 v-if="activatingId === promo.id" class="h-3.5 w-3.5 animate-spin" />
-                <Zap v-else class="h-3.5 w-3.5" />
-                {{ activatingId === promo.id ? 'Activation…' : 'Activer' }}
-              </button>
-              <div
-                v-else
-                class="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-semibold text-white"
-              >
-                <CheckCircle2 class="h-3.5 w-3.5" />
-                Active
+              <div class="flex flex-wrap items-center justify-end gap-2">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-all hover:border-slate-300 hover:bg-slate-50"
+                  @click="openEditModal(promo)"
+                >
+                  <Pencil class="h-3.5 w-3.5" />
+                  Modifier
+                </button>
+                <button
+                  v-if="!promo.estActive"
+                  type="button"
+                  :disabled="activatingId === promo.id"
+                  class="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-all hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 disabled:opacity-50"
+                  @click="handleActivate(promo.id)"
+                >
+                  <Loader2 v-if="activatingId === promo.id" class="h-3.5 w-3.5 animate-spin" />
+                  <Zap v-else class="h-3.5 w-3.5" />
+                  {{ activatingId === promo.id ? 'Activation…' : 'Activer' }}
+                </button>
+                <div
+                  v-else
+                  class="inline-flex items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-xs font-semibold text-white"
+                >
+                  <CheckCircle2 class="h-3.5 w-3.5" />
+                  Active
+                </div>
               </div>
             </div>
           </div>
@@ -386,7 +424,7 @@ onMounted(fetchData)
       </template>
     </div>
 
-    <!-- ── Create Promotion Modal ── -->
+    <!-- ── Create / Edit Promotion Modal ── -->
     <Transition name="modal">
       <div
         v-if="showModal"
@@ -410,8 +448,16 @@ onMounted(fetchData)
                 <Megaphone class="h-5 w-5 text-orange-500" />
               </div>
               <div>
-                <h2 id="modal-title" class="text-base font-bold text-slate-900">Nouvelle promotion</h2>
-                <p class="text-xs text-slate-500">Remplissez les informations ci-dessous</p>
+                <h2 id="modal-title" class="text-base font-bold text-slate-900">
+                  {{ editingPromotionId ? 'Modifier la promotion' : 'Nouvelle promotion' }}
+                </h2>
+                <p class="text-xs text-slate-500">
+                  {{
+                    editingPromotionId
+                      ? 'Ajustez les informations et les référentiels associés'
+                      : 'Remplissez les informations ci-dessous'
+                  }}
+                </p>
               </div>
             </div>
             <button
@@ -444,7 +490,6 @@ onMounted(fetchData)
                   v-model="form.nom"
                   type="text"
                   maxlength="100"
-                  required
                   placeholder="Ex: Promotion 2026"
                   class="block w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:border-orange-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                 />
@@ -459,7 +504,6 @@ onMounted(fetchData)
                     v-model.number="form.annee"
                     type="number"
                     min="2000"
-                    required
                     class="block w-full rounded-xl border border-slate-300 bg-slate-50 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 transition-colors focus:border-orange-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/20"
                   />
                 </div>
@@ -555,8 +599,12 @@ onMounted(fetchData)
                 class="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-500/20 transition-all hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Loader2 v-if="saving" class="h-4 w-4 animate-spin" />
-                <Plus v-else class="h-4 w-4" />
-                {{ saving ? 'Création…' : 'Créer la promotion' }}
+                <component :is="editingPromotionId ? Pencil : Plus" v-else class="h-4 w-4" />
+                {{
+                  saving
+                    ? (editingPromotionId ? 'Enregistrement…' : 'Création…')
+                    : (editingPromotionId ? 'Enregistrer les modifications' : 'Créer la promotion')
+                }}
               </button>
             </div>
           </form>

@@ -223,7 +223,6 @@ onMounted(fetchCoaches)
               <input
                 v-model="form.prenom"
                 type="text"
-                required
                 class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 placeholder="Prénom du coach"
               />
@@ -234,7 +233,6 @@ onMounted(fetchCoaches)
               <input
                 v-model="form.nom"
                 type="text"
-                required
                 class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 placeholder="Nom du coach"
               />
@@ -245,7 +243,6 @@ onMounted(fetchCoaches)
               <input
                 v-model="form.email"
                 type="email"
-                required
                 class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                 placeholder="email@exemple.com"
               />
@@ -257,7 +254,6 @@ onMounted(fetchCoaches)
               </label>
               <select
                 v-model="form.referentielId"
-                required
                 :disabled="referentielsLoading || referentiels.length === 0"
                 class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
               >

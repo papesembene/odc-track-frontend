@@ -109,3 +109,11 @@ export async function createPromotion(
   const res = await api.post("/promotions", payload);
   return extractApiData<PromotionWithReferentiels>(res) as PromotionWithReferentiels;
 }
+
+export async function updatePromotion(
+  id: string,
+  payload: PromotionInput,
+): Promise<PromotionWithReferentiels> {
+  const res = await api.put(`/promotions/${id}`, payload);
+  return extractApiData<PromotionWithReferentiels>(res) as PromotionWithReferentiels;
+}

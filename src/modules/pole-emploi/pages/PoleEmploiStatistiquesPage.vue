@@ -5,6 +5,7 @@ import {
   getStatistiques,
   type StatistiquesGlobales,
 } from "../api/statistiques.api";
+import { getActivePromotion, getPromotions } from "../api/situations.api";
 import { showToast } from "../../../core/ui/toast";
 import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
@@ -14,6 +15,17 @@ type Segment = { label: string; value: number; color: string; bg: string };
 const stats = ref<StatistiquesGlobales | null>(null);
 const isLoading = ref(true);
 const hasLoaded = ref(false);
+const promotionsList = ref<Array<{ id: string; nom: string; annee?: number }>>([]);
+const selectedPromotionId = ref("");
+const activePromotion = ref<{ id: string; nom: string; annee?: number } | null>(
+  null,
+);
+const selectedPromotion = computed(() => {
+  return (
+    promotionsList.value.find((promotion) => promotion.id === selectedPromotionId.value) ??
+    activePromotion.value
+  );
+});
 
 // Computed pour les segments de statut
 const statutSegments = computed<Segment[]>(() => {
@@ -82,6 +94,7 @@ async function loadStats() {
   isLoading.value = true;
   try {
     const data = await getStatistiques({
+      promotionId: selectedPromotionId.value || undefined,
       includePromotions: true,
       includeReferentiels: true,
       includeSituationsRecentes: false,
@@ -99,7 +112,20 @@ async function loadStats() {
 }
 
 onMounted(() => {
-  loadStats();
+  Promise.all([getActivePromotion(), getPromotions()])
+    .then(([promotion, promotions]) => {
+      activePromotion.value = promotion;
+      promotionsList.value = promotions;
+      selectedPromotionId.value = promotion?.id ?? "";
+    })
+    .catch(() => {
+      activePromotion.value = null;
+      promotionsList.value = [];
+      selectedPromotionId.value = "";
+    })
+    .finally(() => {
+      loadStats();
+    });
 });
 </script>
 
@@ -113,6 +139,41 @@ onMounted(() => {
       />
 
       <template v-else-if="stats">
+        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p class="text-sm font-semibold text-slate-900">
+                Promotion consultée
+              </p>
+              <p class="mt-1 text-sm text-slate-500">
+                Les statistiques sont initialisées sur la promotion active, mais restent consultables par promotion.
+              </p>
+            </div>
+
+            <div class="w-full max-w-xs">
+              <label class="mb-2 block text-sm font-medium text-slate-700">
+                Promotion
+              </label>
+              <select
+                v-model="selectedPromotionId"
+                class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-orange-400"
+                @change="loadStats"
+              >
+                <option v-if="promotionsList.length === 0" value="">
+                  {{ isLoading ? "Chargement des promotions..." : "Aucune promotion disponible" }}
+                </option>
+                <option
+                  v-for="promotion in promotionsList"
+                  :key="promotion.id"
+                  :value="promotion.id"
+                >
+                  {{ promotion.nom }}{{ promotion.annee ? ` (${promotion.annee})` : "" }}{{ promotion.id === activePromotion?.id ? " · Active" : "" }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </section>
+
         <!-- ── Hero Banner ── -->
         <div
           class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 p-6 text-white shadow-xl shadow-orange-500/20 lg:p-8"
@@ -140,6 +201,13 @@ onMounted(() => {
               </h2>
               <p class="mt-1 text-sm text-orange-100">
                 Suivi global de l'insertion professionnelle
+              </p>
+              <p class="mt-2 text-xs font-medium text-orange-100/90">
+                {{
+                  selectedPromotion
+                    ? `Statistiques calculées pour ${selectedPromotion.nom}${selectedPromotion.annee ? ` (${selectedPromotion.annee})` : ""}`
+                    : "Aucune promotion active détectée"
+                }}
               </p>
             </div>
             <div class="flex shrink-0 gap-3">

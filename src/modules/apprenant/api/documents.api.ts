@@ -100,7 +100,11 @@ export function extractFileName(path: string): string {
   // On les retire pour n'afficher que le vrai nom du fichier dans l'UI.
   const cleanPath = path.split("?")[0] || path;
   const chunks = cleanPath.split("/");
-  return chunks[chunks.length - 1] || cleanPath;
+  const rawFileName = chunks[chunks.length - 1] || cleanPath;
+
+  // Le stockage préfixe les fichiers pour éviter les collisions.
+  // On nettoie cet identifiant technique avant affichage dans l'interface.
+  return rawFileName.replace(/^\d{13}-[0-9a-f-]{36}-/i, "");
 }
 
 /** Résout l'URL complète du fichier */

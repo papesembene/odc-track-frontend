@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { RouterLink } from "vue-router";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
-import { getApprenants } from "../api/apprenants.api";
-import { getPromotions, getReferentiels } from "../api/situations.api";
+import {
+  exportApprenantsXlsx,
+  getApprenants,
+} from "../api/apprenants.api";
+import {
+  getActivePromotion,
+  getPromotions,
+  getReferentiels,
+} from "../api/situations.api";
 import {
   getStatistiques,
   type StatistiquesGlobales,
@@ -35,6 +42,7 @@ type Row = {
 type PromotionOption = {
   id: string;
   nom: string;
+  annee?: number;
 };
 
 /**
@@ -65,11 +73,13 @@ const referentielsList = ref<ReferentielOption[]>([]);
  */
 const globalStats = ref<StatistiquesGlobales | null>(null);
 const isGlobalStatsLoading = ref(true);
+const activePromotion = ref<PromotionOption | null>(null);
 
 /**
  * Indicateur de chargement
  */
 const isLoading = ref(true);
+const exportLoading = ref(false);
 
 /**
  * Pagination
@@ -82,12 +92,20 @@ const totalPages = ref(1);
  */
 async function loadFilters() {
   try {
-    const [promos, refs] = await Promise.all([
+    const [promos, refs, activePromo] = await Promise.all([
       getPromotions(),
       getReferentiels(),
+      getActivePromotion(),
     ]);
     promotionsList.value = promos;
     referentielsList.value = refs;
+    activePromotion.value = activePromo;
+
+    // Le pôle emploi démarre sur la promotion active pour coller au flux métier
+    // courant, tout en gardant la possibilité de changer le filtre ensuite.
+    if (!filterPromo.value && activePromo?.id) {
+      filterPromo.value = activePromo.id;
+    }
   } catch (error) {
     console.error("Erreur chargement filtres:", error);
   }
@@ -102,6 +120,8 @@ async function loadApprenants() {
     const { items, pagination } = await getApprenants({
       page: currentPage.value,
       limit: 10,
+      promotionId: filterPromo.value || undefined,
+      referentielId: filterRef.value || undefined,
     });
 
     // Transformer les données API en format pour l'affichage
@@ -170,9 +190,10 @@ async function loadGlobalStats() {
 
 // Chargement au montage
 onMounted(() => {
-  loadFilters();
-  loadApprenants();
-  loadGlobalStats();
+  loadFilters().then(() => {
+    loadApprenants();
+    loadGlobalStats();
+  });
 });
 
 const searchQuery = ref("");
@@ -194,6 +215,11 @@ const filtered = computed(() => {
   });
 });
 
+watch([filterPromo, filterRef], () => {
+  currentPage.value = 1;
+  loadApprenants();
+});
+
 /**
  * Change page
  */
@@ -201,6 +227,33 @@ function goToPage(page: number) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
     loadApprenants();
+  }
+}
+
+async function downloadExport() {
+  exportLoading.value = true;
+  try {
+    const blob = await exportApprenantsXlsx({
+      search: searchQuery.value || undefined,
+      promotionId: filterPromo.value || undefined,
+      referentielId: filterRef.value || undefined,
+    });
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `apprenants-pole-emploi-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (error: any) {
+    showToast(
+      error?.response?.data?.message || "Erreur lors de l'export des apprenants",
+      "error",
+    );
+  } finally {
+    exportLoading.value = false;
   }
 }
 </script>
@@ -236,6 +289,13 @@ function goToPage(page: number) {
             </h2>
             <p class="mt-1 text-sm text-orange-100">
               Gérez et suivez les parcours d'insertion
+            </p>
+            <p class="mt-2 text-xs font-medium text-orange-100/90">
+              {{
+                activePromotion
+                  ? `Filtre initial : promotion active ${activePromotion.nom}${activePromotion.annee ? ` (${activePromotion.annee})` : ""}`
+                  : "Aucune promotion active détectée"
+              }}
             </p>
           </div>
           <div class="flex shrink-0 gap-3">
@@ -481,6 +541,26 @@ function goToPage(page: number) {
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </div>
+
+          <button
+            type="button"
+            class="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            :disabled="exportLoading"
+            @click="downloadExport"
+          >
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {{ exportLoading ? "Export..." : "Exporter en XLSX" }}
+          </button>
         </div>
 
         <!-- Table count -->

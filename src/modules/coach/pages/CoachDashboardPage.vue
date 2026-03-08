@@ -220,14 +220,8 @@ onMounted(loadCoachDashboard);
               class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm text-slate-700 outline-none focus:border-orange-400"
               @change="loadCoachDashboard"
             >
-              <option value="">
-                {{
-                  loading
-                    ? "Chargement des promotions..."
-                    : activePromotion
-                      ? `Promotion active - ${activePromotion.nom} (${activePromotion.annee})`
-                      : "Promotion active"
-                }}
+              <option v-if="availablePromotions.length === 0" value="">
+                {{ loading ? "Chargement des promotions..." : "Aucune promotion disponible" }}
               </option>
               <option
                 v-for="promotion in availablePromotions"

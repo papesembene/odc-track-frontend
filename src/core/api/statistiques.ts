@@ -49,6 +49,7 @@ export interface StatistiquesGlobales {
 }
 
 export interface StatistiquesGlobalesOptions {
+  promotionId?: string;
   includePromotions?: boolean;
   includeReferentiels?: boolean;
   includeSituationsRecentes?: boolean;

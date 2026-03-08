@@ -119,14 +119,8 @@ onMounted(loadApprenants)
               class="h-11 w-full rounded-xl border border-slate-200 px-4 text-sm outline-none focus:border-orange-400"
               @change="loadApprenants"
             >
-              <option value="">
-                {{
-                  loading
-                    ? 'Chargement des promotions...'
-                    : activePromotion
-                      ? `Promotion active - ${activePromotion.nom} (${activePromotion.annee})`
-                      : 'Promotion active'
-                }}
+              <option v-if="promotions.length === 0" value="">
+                {{ loading ? 'Chargement des promotions...' : 'Aucune promotion disponible' }}
               </option>
               <option
                 v-for="promotion in promotions"
