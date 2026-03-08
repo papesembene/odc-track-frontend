@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useCurrentUser } from '@/core/auth/useCurrentUser'
 import { clearAuthenticatedSession } from '@/core/auth/auth-session'
+import AppSidebarBrand from '@/shared/components/AppSidebarBrand.vue'
 
 type CoachMenuKey = 'dashboard' | 'apprenants' | 'statistiques'
 
@@ -61,17 +62,8 @@ const logout = async () => {
 
       <!-- ── Desktop Sidebar ── -->
       <aside class="hidden w-64 shrink-0 flex-col bg-slate-900 lg:flex">
-        <div class="flex items-center gap-3 border-b border-white/7 px-5 py-5">
-          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/30">
-            <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-              <path d="M6 12v5c3 3 9 3 12 0v-5"/>
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-bold leading-tight text-white">ODC Track</p>
-            <p class="text-xs text-slate-500">Suivi d'insertion</p>
-          </div>
+        <div class="border-b border-white/7 px-5 py-5">
+          <AppSidebarBrand />
         </div>
 
         <nav class="flex-1 overflow-y-auto px-3 py-5">
@@ -157,14 +149,7 @@ const logout = async () => {
     <Transition name="slide-sidebar">
       <aside v-show="mobileOpen" class="fixed inset-y-0 left-0 z-50 flex w-72 flex-col bg-slate-900 shadow-2xl lg:hidden">
         <div class="flex items-center justify-between border-b border-white/7 px-5 py-5">
-          <div class="flex items-center gap-3">
-            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600">
-              <svg class="h-4 w-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 10v6M2 10l10-5 10 5-10 5z"/>
-              </svg>
-            </div>
-            <p class="text-sm font-bold text-white">ODC Track</p>
-          </div>
+          <AppSidebarBrand compact />
           <button class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white" @click="mobileOpen = false">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />

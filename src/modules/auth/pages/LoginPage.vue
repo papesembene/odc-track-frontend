@@ -5,6 +5,7 @@ import { api } from "../../../core/api/axios";
 import { persistAuthenticatedSession } from "../../../core/auth/auth-session";
 import { getDefaultPathByRole } from "../../../core/auth/role-redirect";
 import { showToast } from "../../../core/ui/toast";
+import AppSidebarBrand from "@/shared/components/AppSidebarBrand.vue";
 
 const router = useRouter();
 const showPassword = ref(false);
@@ -98,17 +99,9 @@ const onSubmit = async () => {
         <div class="w-full max-w-[420px]">
 
           <!-- Logo -->
-          <div class="flex items-center gap-3">
-            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/30">
-              <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="4 4 4 20 20 20" />
-                <polyline points="7 14 11 10 14 13 19 7" />
-              </svg>
-            </div>
-            <div>
-              <span class="text-lg font-bold tracking-tight text-slate-900">ODC Track</span>
-              <p class="text-xs text-slate-400">Suivi d'insertion professionnelle</p>
-            </div>
+          <div>
+            <AppSidebarBrand light />
+            <p class="mt-2 text-xs text-slate-400">Suivi d'insertion professionnelle</p>
           </div>
 
           <!-- Heading -->
@@ -224,17 +217,8 @@ const onSubmit = async () => {
         <div class="pointer-events-none absolute bottom-32 right-20 h-40 w-40 rounded-full bg-orange-500/6"></div>
 
         <!-- Top: Brand mark -->
-        <div class="relative flex items-center gap-3">
-          <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/40">
-            <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4 4 4 20 20 20" />
-              <polyline points="7 14 11 10 14 13 19 7" />
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm font-bold text-white">ODC Track</p>
-            <p class="text-xs text-slate-500">Orange Digital Center</p>
-          </div>
+        <div class="relative">
+          <AppSidebarBrand />
         </div>
 
         <!-- Center: Main copy -->
