@@ -1,0 +1,70 @@
+<script setup lang="ts">
+const props = defineProps<{
+  id: string
+  name: string
+  type: string
+  date: string
+  isDeleting?: boolean
+}>()
+
+const emit = defineEmits<{
+  view: [id: string]
+  download: [id: string]
+  delete: [id: string]
+}>()
+</script>
+
+<template>
+  <div class="flex flex-col gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div class="flex items-start gap-3">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100">
+        <svg class="h-5 w-5 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+          <polyline points="10 9 9 9 8 9" />
+        </svg>
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="truncate text-sm font-semibold text-slate-800">{{ name }}</p>
+        <p class="mt-0.5 text-xs text-slate-500">{{ type }} • {{ date }}</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <button
+        class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-orange-500 transition-colors hover:text-orange-600"
+        @click="emit('view', props.id)"
+      >
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
+        </svg>
+        Voir
+      </button>
+      <button
+        class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-orange-500 transition-colors hover:text-orange-600"
+        @click="emit('download', props.id)"
+      >
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
+        Télécharger
+      </button>
+      <button
+        class="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+        :disabled="props.isDeleting"
+        @click="emit('delete', props.id)"
+      >
+        <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+          <path d="M10 11v6" />
+          <path d="M14 11v6" />
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+        </svg>
+        {{ props.isDeleting ? 'Suppression...' : 'Supprimer' }}
+      </button>
+    </div>
+  </div>
+</template>

@@ -1,0 +1,9 @@
+nom,prenom,email,genre,adresse,telephone
+# Ce fichier est un modele - remplacez les valeurs ci-dessous par vos donnees
+# Champs obligatoires: nom, prenom, email, genre, adresse
+# Champ optionnel: telephone
+#
+# Le choix de la promotion ou du referentiel se fait dans l'interface
+#
+# Exemple:
+Dupont,Jean,jean.dupont@email.com,M,123 Rue de Dakar,0612345678

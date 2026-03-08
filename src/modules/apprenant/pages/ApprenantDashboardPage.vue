@@ -1,0 +1,10 @@
+<script setup lang="ts">
+import ApprenantLayout from '../../../shared/layouts/ApprenantLayout.vue'
+import ApprenantDashboardContent from '../../dashboard/components/ApprenantDashboardContent.vue'
+</script>
+
+<template>
+  <ApprenantLayout title="Tableau de bord" active-menu="dashboard">
+    <ApprenantDashboardContent />
+  </ApprenantLayout>
+</template>
