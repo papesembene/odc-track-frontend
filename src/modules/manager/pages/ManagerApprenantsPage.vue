@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import {
@@ -41,6 +41,7 @@ const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 const totalItems = ref(0)
 const exportLoading = ref(false)
+let apprenantsReloadTimer: ReturnType<typeof setTimeout> | null = null
 
 // ── Filters (from active promotion) ──
 const refs = ref<{ id: string; nom: string }[]>([])
@@ -48,13 +49,30 @@ const refs = ref<{ id: string; nom: string }[]>([])
 const search = ref('')
 const refFil = ref('')
 
+async function loadApprenants() {
+  loading.value = true
+
+  try {
+    const apprenantsResult = await getApprenants({
+      limit: 100,
+      search: search.value || undefined,
+      referentielId: refFil.value || undefined,
+    })
+
+    apprenantsList.value = apprenantsResult.items
+    totalItems.value = apprenantsResult.pagination.totalItems
+  } catch (e: any) {
+    error.value = e.message || 'Erreur lors du chargement des apprenants'
+    console.error('Erreur apprenants:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
 // ── Fetch data on mount ──
 onMounted(async () => {
   try {
-    // Fetch apprenants and stats in parallel
-    // Note: Backend already filters apprenants by active promotion for MANAGER role
-    const [apprenantsResult, stats, activePromotion] = await Promise.all([
-      getApprenants({ limit: 100 }),
+    const [stats, activePromotion] = await Promise.all([
       getStatistiques({
         includePromotions: false,
         includeReferentiels: true,
@@ -62,18 +80,12 @@ onMounted(async () => {
       }),
       getActivePromotion(),
     ])
-    
-    // Set apprenants (already filtered by active promotion)
-    apprenantsList.value = apprenantsResult.items
-    totalItems.value = apprenantsResult.pagination.totalItems
-    
-    // Set stats
+
     statsData.value = stats
-    
-    // Le filtre référentiel du manager doit proposer uniquement
-    // les référentiels de la promotion active.
     refs.value = ((activePromotion as PromotionWithReferentiels | null)?.referentiels ?? [])
       .map(({ referentiel }) => ({ id: referentiel.id, nom: referentiel.nom }))
+
+    await loadApprenants()
     hasLoaded.value = true
   } catch (e: any) {
     error.value = e.message || 'Erreur lors du chargement des données'
@@ -118,15 +130,7 @@ const apprenants = computed<ApprenantUI[]>(() => {
 })
 
 // ── Filtered list (only by search and referentiel now) ──
-const filtered = computed(() =>
-  apprenants.value.filter(a => {
-    const q = search.value.toLowerCase()
-    const matchQ = !q || a.name.toLowerCase().includes(q) || a.email.toLowerCase().includes(q)
-    // Filtre par identifiant référentiel (plus robuste que le nom).
-    const matchR = !refFil.value || a.referentielId === refFil.value
-    return matchQ && matchR
-  })
-)
+const filtered = computed(() => apprenants.value)
 
 // Pagination for apprenants
 const apprenantsPage = ref(1)
@@ -138,6 +142,29 @@ const paginatedApprenants = computed(() => {
 })
 
 const totalApprenantPages = computed(() => Math.ceil(filtered.value.length / apprenantsPerPage))
+
+watch(refFil, () => {
+  apprenantsPage.value = 1
+  loadApprenants()
+})
+
+watch(search, () => {
+  apprenantsPage.value = 1
+
+  if (apprenantsReloadTimer) {
+    clearTimeout(apprenantsReloadTimer)
+  }
+
+  apprenantsReloadTimer = setTimeout(() => {
+    loadApprenants()
+  }, 300)
+})
+
+onBeforeUnmount(() => {
+  if (apprenantsReloadTimer) {
+    clearTimeout(apprenantsReloadTimer)
+  }
+})
 
 // ── Stat counts (from API) ──
 const total = computed(() => statsData.value?.totalApprenants || apprenants.value.length)

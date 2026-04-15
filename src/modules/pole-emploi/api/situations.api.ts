@@ -36,12 +36,21 @@ type PendingSituation = {
   };
 };
 
+export interface PendingSituationsQuery {
+  search?: string;
+  promotionId?: string;
+  referentielId?: string;
+  statut?: string;
+}
+
 /**
  * Récupère la liste des situations professionnelles en attente de validation.
  * @returns Tableau de situations en attente
  */
-export async function getSituationsEnAttente(): Promise<PendingSituation[]> {
-  const res = await api.get("/situations/attentes");
+export async function getSituationsEnAttente(
+  query?: PendingSituationsQuery,
+): Promise<PendingSituation[]> {
+  const res = await api.get("/situations/attentes", { params: query });
   return extractItems<PendingSituation>(res);
 }
 
