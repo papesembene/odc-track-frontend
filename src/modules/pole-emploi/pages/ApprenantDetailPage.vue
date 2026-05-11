@@ -99,10 +99,13 @@ const cvDocument = computed(() => apprenantData.value?.cvDocument ?? null);
  * Charge les documents depuis l'API
  */
 async function loadDocuments() {
-  if (!apprenantData.value?.id) return;
+  if (!apprenantData.value?.localId) {
+    documents.value = [];
+    return;
+  }
   documentsLoading.value = true;
   try {
-    documents.value = await getDocumentsByApprenant(apprenantData.value.id);
+    documents.value = await getDocumentsByApprenant(apprenantData.value.localId);
   } catch (error) {
     console.error("Erreur chargement documents:", error);
   } finally {

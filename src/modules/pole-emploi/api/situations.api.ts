@@ -59,7 +59,7 @@ export async function getSituationsEnAttente(
  * @returns Tableau de promotions
  */
 export async function getPromotions(): Promise<PromotionOption[]> {
-  const res = await api.get("/promotions");
+  const res = await api.get("/promotions/master-data");
   return extractItems<PromotionOption>(res);
 }
 
@@ -69,7 +69,7 @@ export async function getPromotions(): Promise<PromotionOption[]> {
  * la consultation d'une autre promotion.
  */
 export async function getActivePromotion(): Promise<PromotionOption | null> {
-  const res = await api.get("/promotions/active");
+  const res = await api.get("/promotions/master-data/active");
   return res?.data?.data || null;
 }
 
@@ -78,6 +78,28 @@ export async function getActivePromotion(): Promise<PromotionOption | null> {
  * @returns Tableau de référentiels
  */
 export async function getReferentiels(): Promise<ReferentielOption[]> {
-  const res = await api.get("/referentiels");
+  const res = await api.get("/referentiels/master-data");
+  return extractItems<ReferentielOption>(res);
+}
+
+/**
+ * Récupère les promotions locales de Soutenance.
+ * Utilisé pour les cas historiques afin de réutiliser une promotion déjà créée.
+ */
+export async function getLocalPromotions(): Promise<PromotionOption[]> {
+  const res = await api.get("/promotions", {
+    params: { page: 1, limit: 100 },
+  });
+  return extractItems<PromotionOption>(res);
+}
+
+/**
+ * Récupère les référentiels locaux de Soutenance.
+ * Utilisé pour sélectionner un référentiel historique existant.
+ */
+export async function getLocalReferentiels(): Promise<ReferentielOption[]> {
+  const res = await api.get("/referentiels", {
+    params: { page: 1, limit: 100 },
+  });
   return extractItems<ReferentielOption>(res);
 }

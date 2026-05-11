@@ -1,115 +1,126 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
+import Swal from "sweetalert2";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
-import { getPromotions, getReferentiels } from "../api/situations.api";
 import { showToast } from "../../../core/ui/toast";
 import { confirm } from "../../../core/ui/sweet-alert";
-import Swal from "sweetalert2";
+import {
+  type CreatedHistoricalAccount,
+  downloadHistoricalImportTemplate,
+  importApprenantsHistorique,
+  type ImportResult,
+} from "../api/import.apprenants.api";
+import {
+  getLocalPromotions,
+  getLocalReferentiels,
+} from "../api/situations.api";
 
-/**
- * Types
- */
-interface Promotion {
-  id: string;
-  nom: string;
-  createdAt?: string;
-}
-
-interface Referentiel {
-  id: string;
-  nom: string;
-  createdAt?: string;
-}
-
-interface ImportResult {
-  totalRows: number;
-  createdCount: number;
-  failedCount: number;
-  errors: { line: number; message: string }[];
-}
-
-/**
- * État
- */
-const importType = ref<"promotion" | "referentiel">("promotion");
-const selectedPromotionId = ref("");
-const selectedReferentielId = ref("");
-const promotions = ref<Promotion[]>([]);
-const referentiels = ref<Referentiel[]>([]);
-const isLoading = ref(false);
-const isImporting = ref(false);
 const selectedFile = ref<File | null>(null);
 const dragOver = ref(false);
+const isImporting = ref(false);
+const isDownloadingTemplate = ref(false);
 const importResult = ref<ImportResult | null>(null);
+const isLoadingOptions = ref(false);
+const promotionMode = ref<"existing" | "new">("existing");
+const referentialMode = ref<"existing" | "new">("existing");
+const selectedPromotionName = ref("");
+const newPromotionName = ref("");
+const selectedReferentialName = ref("");
+const newReferentialName = ref("");
+const promotions = ref<Array<{ id: string; nom: string }>>([]);
+const referentials = ref<Array<{ id: string; nom: string }>>([]);
 
-/**
- * Computed
- */
-const canImport = computed(() => {
-  if (!selectedFile.value) return false;
-  if (importType.value === "promotion" && !selectedPromotionId.value)
-    return false;
-  if (importType.value === "referentiel" && !selectedReferentielId.value)
-    return false;
-  return true;
-});
+const requiredColumns = ["prenom", "nom", "telephone", "email"];
 
-/**
- * Charge les promotions et référentiels
- */
-async function loadData() {
-  isLoading.value = true;
+const optionalColumns = [
+  "matricule",
+  "sexe",
+  "date_naissance",
+  "adresse",
+  "statut_insertion",
+  "entreprise",
+  "poste",
+  "date_embauche",
+  "type_contrat",
+  "commentaire",
+];
+
+function downloadCreatedAccounts(accounts: CreatedHistoricalAccount[]) {
+  if (!accounts.length) return;
+
+  const escapeCsv = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  const rows = [
+    ["prenom", "nom", "email", "mot_de_passe_temporaire"],
+    ...accounts.map((account) => [
+      account.prenom,
+      account.nom,
+      account.email,
+      account.temporaryPassword,
+    ]),
+  ];
+
+  const csv = rows.map((row) => row.map(escapeCsv).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "comptes-import-historique.csv";
+  link.click();
+  window.URL.revokeObjectURL(url);
+}
+
+const promotionName = computed(() =>
+  promotionMode.value === "existing"
+    ? selectedPromotionName.value.trim()
+    : newPromotionName.value.trim(),
+);
+
+const referentialName = computed(() =>
+  referentialMode.value === "existing"
+    ? selectedReferentialName.value.trim()
+    : newReferentialName.value.trim(),
+);
+
+const canImport = computed(
+  () =>
+    Boolean(selectedFile.value) &&
+    Boolean(promotionName.value) &&
+    Boolean(referentialName.value) &&
+    !isImporting.value,
+);
+
+async function loadOptions() {
+  isLoadingOptions.value = true;
   try {
-    const [promoData, refData] = await Promise.all([
-      getPromotions(),
-      getReferentiels(),
+    const [promotionItems, referentialItems] = await Promise.all([
+      getLocalPromotions(),
+      getLocalReferentiels(),
     ]);
-    promotions.value = promoData;
-    referentiels.value = refData;
+
+    promotions.value = promotionItems;
+    referentials.value = referentialItems;
+
+    if (promotionItems.length > 0) {
+      selectedPromotionName.value = promotionItems[0].nom;
+    } else {
+      promotionMode.value = "new";
+    }
+
+    if (referentialItems.length > 0) {
+      selectedReferentialName.value = referentialItems[0].nom;
+    } else {
+      referentialMode.value = "new";
+    }
   } catch (error: any) {
     showToast(
-      error?.response?.data?.message || "Erreur de chargement",
+      error?.message || "Impossible de charger les promotions et referentiels",
       "error",
     );
   } finally {
-    isLoading.value = false;
+    isLoadingOptions.value = false;
   }
 }
 
-/**
- * Gère le changement de fichier
- */
-function handleFileChange(event: Event) {
-  const input = event.target as HTMLInputElement;
-  if (input.files && input.files[0]) {
-    const file = input.files[0];
-    validateAndSetFile(file);
-  }
-}
-
-/**
- * Gère le drag & drop
- */
-function handleDrop(event: DragEvent) {
-  dragOver.value = false;
-  if (event.dataTransfer?.files && event.dataTransfer.files[0]) {
-    const file = event.dataTransfer.files[0];
-    validateAndSetFile(file);
-  }
-}
-
-function handleDragOver(event: DragEvent) {
-  event.preventDefault();
-  dragOver.value = true;
-}
-
-function handleDragLeave() {
-  dragOver.value = false;
-}
-
-/**
- * Valide et définit le fichier
- */
 function validateAndSetFile(file: File) {
   const fileName = file.name.toLowerCase();
   const isValidFormat =
@@ -119,7 +130,7 @@ function validateAndSetFile(file: File) {
 
   if (!isValidFormat) {
     showToast(
-      "Format non supporté. Utilisez un fichier .csv, .xls ou .xlsx",
+      "Format non supporte. Utilisez un fichier .csv, .xls ou .xlsx",
       "error",
     );
     return;
@@ -129,22 +140,54 @@ function validateAndSetFile(file: File) {
   importResult.value = null;
 }
 
-/**
- * Supprime le fichier sélectionné
- */
-function removeFile() {
-  selectedFile.value = null;
+function handleFileChange(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (input.files?.[0]) {
+    validateAndSetFile(input.files[0]);
+  }
 }
 
-/**
- * Effectue l'import
- */
+function handleDrop(event: DragEvent) {
+  dragOver.value = false;
+  if (event.dataTransfer?.files?.[0]) {
+    validateAndSetFile(event.dataTransfer.files[0]);
+  }
+}
+
+function removeFile() {
+  selectedFile.value = null;
+  importResult.value = null;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+}
+
+async function handleDownloadTemplate() {
+  isDownloadingTemplate.value = true;
+  try {
+    const blob = await downloadHistoricalImportTemplate();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "template-import-historique.xlsx";
+    link.click();
+    window.URL.revokeObjectURL(url);
+  } catch (error: any) {
+    showToast(error?.message || "Impossible de telecharger le modele", "error");
+  } finally {
+    isDownloadingTemplate.value = false;
+  }
+}
+
 async function handleImport() {
-  if (!canImport.value || !selectedFile.value) return;
+  if (!selectedFile.value) return;
 
   const confirmed = await confirm(
-    "Voulez-vous vraiment importer ces apprenants ?",
-    "Confirmer l'import",
+    "Importer ce fichier pour cette promotion et ce referentiel ?",
+    "Confirmer l'import historique",
   );
 
   if (!confirmed) return;
@@ -153,32 +196,17 @@ async function handleImport() {
   importResult.value = null;
 
   try {
-    let result: ImportResult;
-
-    if (importType.value === "promotion") {
-      const { importApprenantsByPromotion } =
-        await import("../api/import.apprenants.api");
-      result = await importApprenantsByPromotion(
-        selectedPromotionId.value,
-        selectedFile.value,
-      );
-    } else {
-      const { importApprenantsByReferentiel } =
-        await import("../api/import.apprenants.api");
-      result = await importApprenantsByReferentiel(
-        selectedReferentielId.value,
-        selectedFile.value,
-      );
-    }
-
+    const result = await importApprenantsHistorique(
+      promotionName.value,
+      referentialName.value,
+      selectedFile.value,
+    );
     importResult.value = result;
 
-    // Affichage du résultat
-    if (result.errors && result.errors.length > 0) {
-      // SweetAlert d'avertissement avec détails des erreurs
+    if (result.failedCount > 0) {
       const errorsHtml = result.errors
         .slice(0, 10)
-        .map((e) => `• Ligne ${e.line}: ${e.message}`)
+        .map((error) => `• Ligne ${error.line}: ${error.message}`)
         .join("<br>");
       const moreErrors =
         result.errors.length > 10
@@ -187,14 +215,17 @@ async function handleImport() {
 
       await Swal.fire({
         icon: "warning",
-        title: "Import terminé avec erreurs",
+        title: "Import termine avec alertes",
         html: `
-          <div style="text-align: left; font-size: 14px;">
-            <p><strong>Importés:</strong> ${result.createdCount}</p>
-            <p><strong>Erreurs:</strong> ${result.errors.length}</p>
-            <hr style="margin: 10px 0;">
-            <p><strong>Détails des erreurs:</strong></p>
-            <div style="max-height: 200px; overflow-y: auto; background: #fef2f2; padding: 10px; border-radius: 5px;">
+          <div style="text-align:left;font-size:14px;">
+            <p><strong>Apprenants crees:</strong> ${result.createdCount}</p>
+            <p><strong>Promotions creees:</strong> ${result.createdPromotions ?? 0}</p>
+            <p><strong>Referentiels crees:</strong> ${result.createdReferentiels ?? 0}</p>
+            <p><strong>Situations creees:</strong> ${result.createdSituations ?? 0}</p>
+            <p><strong>Comptes locaux crees:</strong> ${result.createdAccounts?.length ?? 0}</p>
+            <p><strong>Erreurs:</strong> ${result.failedCount}</p>
+            <hr style="margin:10px 0;">
+            <div style="max-height:220px;overflow-y:auto;background:#fef2f2;padding:10px;border-radius:8px;">
               ${errorsHtml}${moreErrors}
             </div>
           </div>
@@ -205,48 +236,54 @@ async function handleImport() {
     } else {
       await Swal.fire({
         icon: "success",
-        title: "Import réussi !",
-        text: `${result.createdCount} apprenant(s) importé(s) avec succès`,
+        title: "Import historique reussi",
+        html: `
+          <div style="text-align:left;font-size:14px;">
+            <p><strong>Apprenants crees:</strong> ${result.createdCount}</p>
+            <p><strong>Promotions creees:</strong> ${result.createdPromotions ?? 0}</p>
+            <p><strong>Referentiels crees:</strong> ${result.createdReferentiels ?? 0}</p>
+            <p><strong>Situations creees:</strong> ${result.createdSituations ?? 0}</p>
+            <p><strong>Comptes locaux crees:</strong> ${result.createdAccounts?.length ?? 0}</p>
+          </div>
+        `,
         confirmButtonText: "OK",
         confirmButtonColor: "#f97316",
       });
     }
 
-    // Vidage du fichier après import pour éviter une double importation
-    selectedFile.value = null;
-    importResult.value = null;
+    if (result.createdAccounts?.length) {
+      downloadCreatedAccounts(result.createdAccounts);
+      showToast(
+        "Le fichier des comptes crees a ete telecharge automatiquement.",
+        "success",
+      );
+    }
 
-    // Réinitialiser les selections
-    selectedPromotionId.value = "";
-    selectedReferentielId.value = "";
+    selectedFile.value = null;
+    if (promotionMode.value === "new") {
+      newPromotionName.value = "";
+    }
+    if (referentialMode.value === "new") {
+      newReferentialName.value = "";
+    }
   } catch (error: any) {
-    showToast(
-      error?.response?.data?.message || "Erreur lors de l'import",
-      "error",
-    );
+    showToast(error?.message || "Erreur lors de l'import historique", "error");
   } finally {
     isImporting.value = false;
   }
 }
 
-/**
- * Formatte la taille du fichier
- */
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + " o";
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " Ko";
-  return (bytes / (1024 * 1024)).toFixed(1) + " Mo";
-}
-
 onMounted(() => {
-  loadData();
+  loadOptions();
 });
 </script>
 
 <template>
-  <BackofficeLayout title="Import apprenants" active-menu="import">
+  <BackofficeLayout
+    title="Import historique"
+    active-menu="import-historique"
+  >
     <div class="space-y-5">
-      <!-- ── Hero Banner ── -->
       <div
         class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 p-6 text-white shadow-xl shadow-orange-500/20 lg:p-8"
       >
@@ -263,208 +300,270 @@ onMounted(() => {
             <div
               class="mb-2 inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1"
             >
-              <span class="h-1.5 w-1.5 rounded-full bg-green-400"></span>
-              <span class="text-xs font-semibold">Pôle Emploi · Actif</span>
+              <span class="h-1.5 w-1.5 rounded-full bg-amber-300"></span>
+              <span class="text-xs font-semibold">Historique seulement</span>
             </div>
-            <h2 class="text-2xl font-extrabold leading-tight sm:text-3xl">
-              Import apprenants
+            <h2 class="text-2xl font-extrabold sm:text-3xl">
+              Import anciennes promotions
             </h2>
             <p class="mt-1 text-sm text-orange-100">
-              Importez des apprenants depuis un fichier CSV ou Excel
+              Choisissez une promotion historique et un referentiel, puis
+              importez uniquement les apprenants de ce cadre.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-orange-600 shadow-sm transition-colors hover:bg-orange-50 disabled:opacity-60"
+            :disabled="isDownloadingTemplate"
+            @click="handleDownloadTemplate"
+          >
+            <svg
+              class="h-4 w-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            {{
+              isDownloadingTemplate
+                ? "Telechargement..."
+                : "Telecharger le modele"
+            }}
+          </button>
+        </div>
+      </div>
+
+      <div class="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900">
+            Quand utiliser cet import
+          </h3>
+          <div class="mt-4 space-y-3 text-sm text-slate-600">
+            <p>
+              Cet import est reserve aux apprenants des anciennes promotions qui
+              n'existent pas encore dans <strong>in-odc</strong>.
+            </p>
+            <p>
+              Vous devez choisir <strong>une seule promotion</strong> et
+              <strong>un seul referentiel</strong> avant l'import.
+            </p>
+            <p>
+              Si la promotion existe deja dans in-odc, l'import sera refuse
+              pour eviter les doublons. Si un statut d'insertion est fourni,
+              une situation
+              professionnelle historique sera creee automatiquement.
+            </p>
+            <p>
+              Chaque apprenant historique importe recevra un
+              <strong>compte local Suivi insertion</strong>.
+            </p>
+          </div>
+
+          <div class="mt-6 grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Colonnes obligatoires
+              </p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span
+                  v-for="column in requiredColumns"
+                  :key="column"
+                  class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700"
+                >
+                  {{ column }}
+                </span>
+              </div>
+            </div>
+
+            <div class="rounded-xl bg-slate-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Colonnes optionnelles
+              </p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <span
+                  v-for="column in optionalColumns"
+                  :key="column"
+                  class="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
+                >
+                  {{ column }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900">Regles de saisie</h3>
+          <div class="mt-4 space-y-3 text-sm text-slate-600">
+            <p>Dates conseillees : <strong>YYYY-MM-DD</strong></p>
+            <p>Sexe conseille : <strong>M</strong> ou <strong>F</strong></p>
+            <p>
+              Statuts acceptes : En emploi, En stage, Projet perso, Poursuite
+              etudes, Recherche emploi
+            </p>
+            <p>
+              Le nom de promotion doit idealement contenir l'annee, par exemple
+              <strong>PROMOTION 2023</strong>.
+            </p>
+            <p>
+              Apres import, un fichier des
+              <strong>identifiants temporaires</strong> sera telecharge.
+            </p>
+            <p>
+              Les apprenants devront
+              <strong>changer leur mot de passe a la premiere connexion</strong>.
             </p>
           </div>
         </div>
       </div>
 
-      <!-- ── Type d'import ── -->
-      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 class="mb-4 text-sm font-bold text-slate-900">Type d'import</h3>
-
-        <div class="grid gap-4 sm:grid-cols-2">
-          <!-- Option Promotion -->
-          <label
-            class="relative cursor-pointer rounded-xl border-2 p-4 transition-all"
-            :class="
-              importType === 'promotion'
-                ? 'border-orange-500 bg-orange-50'
-                : 'border-slate-200 hover:border-orange-300'
-            "
-          >
-            <input
-              v-model="importType"
-              type="radio"
-              value="promotion"
-              class="sr-only"
-            />
-            <div class="flex items-start gap-3">
-              <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                :class="
-                  importType === 'promotion'
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-slate-100 text-slate-500'
-                "
-              >
-                <svg
-                  class="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-slate-900">Par Promotion</p>
-                <p class="mt-1 text-xs text-slate-500">
-                  Importer des apprenants pour une promotion existante
-                </p>
-              </div>
-            </div>
-            <div
-              v-if="importType === 'promotion'"
-              class="absolute right-3 top-3 h-4 w-4 rounded-full bg-orange-500"
+      <div class="grid gap-5 xl:grid-cols-2">
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900">
+            Promotion historique cible
+          </h3>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+              :class="
+                promotionMode === 'existing'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-slate-100 text-slate-600'
+              "
+              @click="promotionMode = 'existing'"
             >
-              <svg
-                class="h-4 w-4 text-white"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="3"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-          </label>
-
-          <!-- Option Référentiel -->
-          <label
-            class="relative cursor-pointer rounded-xl border-2 p-4 transition-all"
-            :class="
-              importType === 'referentiel'
-                ? 'border-orange-500 bg-orange-50'
-                : 'border-slate-200 hover:border-orange-300'
-            "
-          >
-            <input
-              v-model="importType"
-              type="radio"
-              value="referentiel"
-              class="sr-only"
-            />
-            <div class="flex items-start gap-3">
-              <div
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                :class="
-                  importType === 'referentiel'
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-slate-100 text-slate-500'
-                "
-              >
-                <svg
-                  class="h-5 w-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-                  />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                </svg>
-              </div>
-              <div>
-                <p class="font-semibold text-slate-900">Par Référentiel</p>
-                <p class="mt-1 text-xs text-slate-500">
-                  Importer des apprenants pour un référentiel existant
-                </p>
-              </div>
-            </div>
-            <div
-              v-if="importType === 'referentiel'"
-              class="absolute right-3 top-3 h-4 w-4 rounded-full bg-orange-500"
+              Selectionner
+            </button>
+            <button
+              type="button"
+              class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+              :class="
+                promotionMode === 'new'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-slate-100 text-slate-600'
+              "
+              @click="promotionMode = 'new'"
             >
-              <svg
-                class="h-4 w-4 text-white"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="3"
-              >
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
-            </div>
-          </label>
+              Creer nouvelle
+            </button>
+          </div>
+          <select
+            v-if="promotionMode === 'existing'"
+            v-model="selectedPromotionName"
+            class="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-orange-400 disabled:bg-slate-50"
+            :disabled="isLoadingOptions || promotions.length === 0"
+          >
+            <option value="">
+              {{
+                isLoadingOptions
+                  ? "Chargement..."
+                  : "Selectionner une promotion existante"
+              }}
+            </option>
+            <option
+              v-for="promotion in promotions"
+              :key="promotion.id"
+              :value="promotion.nom"
+            >
+              {{ promotion.nom }}
+            </option>
+          </select>
+          <input
+            v-else
+            v-model="newPromotionName"
+            type="text"
+            placeholder="Ex: PROMOTION 2023"
+            class="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-orange-400"
+          />
+          <p class="mt-2 text-xs text-slate-500">
+            Une seule promotion par import.
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900">
+            Referentiel cible
+          </h3>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+              :class="
+                referentialMode === 'existing'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-slate-100 text-slate-600'
+              "
+              @click="referentialMode = 'existing'"
+            >
+              Selectionner
+            </button>
+            <button
+              type="button"
+              class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
+              :class="
+                referentialMode === 'new'
+                  ? 'bg-orange-500 text-white'
+                  : 'bg-slate-100 text-slate-600'
+              "
+              @click="referentialMode = 'new'"
+            >
+              Creer nouveau
+            </button>
+          </div>
+          <select
+            v-if="referentialMode === 'existing'"
+            v-model="selectedReferentialName"
+            class="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-orange-400 disabled:bg-slate-50"
+            :disabled="isLoadingOptions || referentials.length === 0"
+          >
+            <option value="">
+              {{
+                isLoadingOptions
+                  ? "Chargement..."
+                  : "Selectionner un referentiel existant"
+              }}
+            </option>
+            <option
+              v-for="referential in referentials"
+              :key="referential.id"
+              :value="referential.nom"
+            >
+              {{ referential.nom }}
+            </option>
+          </select>
+          <input
+            v-else
+            v-model="newReferentialName"
+            type="text"
+            placeholder="Ex: DEV WEB MOBILE"
+            class="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-orange-400"
+          />
+          <p class="mt-2 text-xs text-slate-500">
+            Un seul referentiel par import.
+          </p>
         </div>
       </div>
 
-      <!-- ── Sélection de la promotion/référentiel ── -->
-      <div
-        v-if="importType === 'promotion'"
-        class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      >
-        <h3 class="mb-4 text-sm font-bold text-slate-900">
-          Sélectionner une promotion
-        </h3>
-
-        <select
-          v-model="selectedPromotionId"
-          class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-orange-400"
-        >
-          <option value="">Sélectionner une promotion...</option>
-          <option v-for="promo in promotions" :key="promo.id" :value="promo.id">
-            {{ promo.nom }}
-          </option>
-        </select>
-
-        <p
-          v-if="promotions.length === 0 && !isLoading"
-          class="mt-2 text-sm text-amber-600"
-        >
-          Aucune promotion trouvée. Créez d'abord une promotion.
-        </p>
-      </div>
-
-      <div
-        v-else
-        class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-      >
-        <h3 class="mb-4 text-sm font-bold text-slate-900">
-          Sélectionner un référentiel
-        </h3>
-
-        <select
-          v-model="selectedReferentielId"
-          class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm outline-none focus:border-orange-400"
-        >
-          <option value="">Sélectionner un référentiel...</option>
-          <option v-for="ref in referentiels" :key="ref.id" :value="ref.id">
-            {{ ref.nom }}
-          </option>
-        </select>
-
-        <p
-          v-if="referentiels.length === 0 && !isLoading"
-          class="mt-2 text-sm text-amber-600"
-        >
-          Aucun référentiel trouvé. Créez d'abord un référentiel.
-        </p>
-      </div>
-
-      <!-- ── Zone de dépôt du fichier ── -->
       <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p class="font-semibold">Important</p>
+          <p class="mt-1">
+            Conservez le fichier des comptes telecharge apres l'import. Il
+            contient les emails et mots de passe temporaires a remettre aux
+            apprenants historiques.
+          </p>
+        </div>
+
         <h3 class="mb-4 text-sm font-bold text-slate-900">
-          Fichier à importer
+          Fichier a importer
         </h3>
 
-        <!-- Fichier sélectionné -->
         <div
           v-if="selectedFile"
           class="flex items-center gap-4 rounded-xl border border-green-300 bg-green-50 p-4"
@@ -485,8 +584,8 @@ onMounted(() => {
               <polyline points="14 2 14 8 20 8" />
             </svg>
           </div>
-          <div class="flex-1 min-w-0">
-            <p class="font-medium text-slate-900 truncate">
+          <div class="min-w-0 flex-1">
+            <p class="truncate font-medium text-slate-900">
               {{ selectedFile.name }}
             </p>
             <p class="text-sm text-slate-500">
@@ -494,8 +593,9 @@ onMounted(() => {
             </p>
           </div>
           <button
+            type="button"
+            class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-red-500"
             @click="removeFile"
-            class="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-red-500"
           >
             <svg
               class="h-5 w-5"
@@ -510,7 +610,6 @@ onMounted(() => {
           </button>
         </div>
 
-        <!-- Zone de dépôt -->
         <div
           v-else
           class="flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors"
@@ -520,11 +619,11 @@ onMounted(() => {
               : 'border-slate-300 hover:border-orange-400'
           "
           @drop.prevent="handleDrop"
-          @dragover="handleDragOver"
-          @dragleave="handleDragLeave"
+          @dragover.prevent="dragOver = true"
+          @dragleave="dragOver = false"
         >
           <div
-            class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 mb-4"
+            class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100"
           >
             <svg
               class="h-8 w-8 text-slate-400"
@@ -539,7 +638,7 @@ onMounted(() => {
             </svg>
           </div>
           <p class="text-center font-medium text-slate-700">
-            Glissez-déposez votre fichier ici
+            Glissez-deposez votre fichier ici
           </p>
           <p class="mt-1 text-center text-sm text-slate-500">ou</p>
           <label
@@ -554,32 +653,49 @@ onMounted(() => {
             />
           </label>
           <p class="mt-3 text-xs text-slate-400">
-            Formats supportés: CSV, XLSX, XLS
+            Formats supportes: CSV, XLSX, XLS
           </p>
         </div>
       </div>
 
-      <!-- ── Résultat de l'import ── -->
       <div
         v-if="importResult"
         class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <h3 class="mb-4 text-sm font-bold text-slate-900">
-          Résultat de l'import
+          Resultat du dernier import
         </h3>
 
-        <div class="grid gap-4 sm:grid-cols-3">
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
           <div class="rounded-xl bg-green-50 p-4 text-center">
             <p class="text-2xl font-bold text-green-600">
               {{ importResult.createdCount }}
             </p>
-            <p class="text-sm text-green-700">Importés</p>
+            <p class="text-sm text-green-700">Apprenants</p>
           </div>
           <div class="rounded-xl bg-blue-50 p-4 text-center">
             <p class="text-2xl font-bold text-blue-600">
-              {{ importResult.totalRows - importResult.failedCount }}
+              {{ importResult.createdPromotions ?? 0 }}
             </p>
-            <p class="text-sm text-blue-700">Total lignes</p>
+            <p class="text-sm text-blue-700">Promotions</p>
+          </div>
+          <div class="rounded-xl bg-indigo-50 p-4 text-center">
+            <p class="text-2xl font-bold text-indigo-600">
+              {{ importResult.createdReferentiels ?? 0 }}
+            </p>
+            <p class="text-sm text-indigo-700">Referentiels</p>
+          </div>
+          <div class="rounded-xl bg-amber-50 p-4 text-center">
+            <p class="text-2xl font-bold text-amber-600">
+              {{ importResult.createdSituations ?? 0 }}
+            </p>
+            <p class="text-sm text-amber-700">Situations</p>
+          </div>
+          <div class="rounded-xl bg-orange-50 p-4 text-center">
+            <p class="text-2xl font-bold text-orange-600">
+              {{ importResult.createdAccounts?.length ?? 0 }}
+            </p>
+            <p class="text-sm text-orange-700">Comptes</p>
           </div>
           <div class="rounded-xl bg-red-50 p-4 text-center">
             <p class="text-2xl font-bold text-red-600">
@@ -589,32 +705,21 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Erreurs -->
-        <div
-          v-if="importResult.errors && importResult.errors.length > 0"
-          class="mt-4"
+        <p
+          v-if="(importResult.createdAccounts?.length ?? 0) > 0"
+          class="mt-4 text-sm text-slate-600"
         >
-          <h4 class="text-sm font-semibold text-slate-900 mb-2">Erreurs:</h4>
-          <ul
-            class="max-h-40 overflow-y-auto space-y-1 rounded-lg bg-red-50 p-3"
-          >
-            <li
-              v-for="(error, index) in importResult.errors"
-              :key="index"
-              class="text-xs text-red-600"
-            >
-              Ligne {{ error.line }}: {{ error.message }}
-            </li>
-          </ul>
-        </div>
+          Le fichier des comptes temporaires a ete telecharge automatiquement
+          apres cet import.
+        </p>
       </div>
 
-      <!-- ── Bouton d'import ── -->
       <div class="flex justify-end">
         <button
+          type="button"
+          class="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+          :disabled="!canImport"
           @click="handleImport"
-          :disabled="!canImport || isImporting"
-          class="flex items-center gap-2 rounded-xl bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-orange-500/20 transition-colors hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <svg
             v-if="isImporting"
@@ -629,12 +734,12 @@ onMounted(() => {
               r="10"
               stroke="currentColor"
               stroke-width="4"
-            ></circle>
+            />
             <path
               class="opacity-75"
               fill="currentColor"
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            ></path>
+            />
           </svg>
           <svg
             v-else
@@ -648,7 +753,7 @@ onMounted(() => {
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          {{ isImporting ? "Import en cours..." : "Importer" }}
+          {{ isImporting ? "Import en cours..." : "Importer l'historique" }}
         </button>
       </div>
     </div>

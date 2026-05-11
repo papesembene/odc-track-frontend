@@ -7,7 +7,6 @@ import {
   getApprenants,
   type ApprenantListItem,
 } from '@/modules/manager/api/apprenants.api'
-import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
 import {
   getActivePromotion,
   type PromotionWithReferentiels,
@@ -35,11 +34,11 @@ interface ApprenantUI {
 
 // ── Data from API ──
 const apprenantsList = ref<ApprenantListItem[]>([])
-const statsData = ref<StatistiquesGlobales | null>(null)
 const loading = ref(true)
 const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 const totalItems = ref(0)
+const totalWithSituations = ref(0)
 const exportLoading = ref(false)
 let apprenantsReloadTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -48,19 +47,24 @@ const refs = ref<{ id: string; nom: string }[]>([])
 
 const search = ref('')
 const refFil = ref('')
+const apprenantsPage = ref(1)
+const apprenantsPerPage = 12
 
 async function loadApprenants() {
   loading.value = true
 
   try {
     const apprenantsResult = await getApprenants({
-      limit: 100,
+      page: apprenantsPage.value,
+      limit: apprenantsPerPage,
       search: search.value || undefined,
       referentielId: refFil.value || undefined,
     })
 
     apprenantsList.value = apprenantsResult.items
     totalItems.value = apprenantsResult.pagination.totalItems
+    totalWithSituations.value =
+      apprenantsResult.summary?.totalWithSituations ?? 0
   } catch (e: any) {
     error.value = e.message || 'Erreur lors du chargement des apprenants'
     console.error('Erreur apprenants:', e)
@@ -72,16 +76,7 @@ async function loadApprenants() {
 // ── Fetch data on mount ──
 onMounted(async () => {
   try {
-    const [stats, activePromotion] = await Promise.all([
-      getStatistiques({
-        includePromotions: false,
-        includeReferentiels: true,
-        includeSituationsRecentes: false,
-      }),
-      getActivePromotion(),
-    ])
-
-    statsData.value = stats
+    const activePromotion = await getActivePromotion()
     refs.value = ((activePromotion as PromotionWithReferentiels | null)?.referentiels ?? [])
       .map(({ referentiel }) => ({ id: referentiel.id, nom: referentiel.nom }))
 
@@ -132,16 +127,11 @@ const apprenants = computed<ApprenantUI[]>(() => {
 // ── Filtered list (only by search and referentiel now) ──
 const filtered = computed(() => apprenants.value)
 
-// Pagination for apprenants
-const apprenantsPage = ref(1)
-const apprenantsPerPage = 12
+const paginatedApprenants = computed(() => filtered.value)
 
-const paginatedApprenants = computed(() => {
-  const start = (apprenantsPage.value - 1) * apprenantsPerPage
-  return filtered.value.slice(start, start + apprenantsPerPage)
-})
-
-const totalApprenantPages = computed(() => Math.ceil(filtered.value.length / apprenantsPerPage))
+const totalApprenantPages = computed(() =>
+  Math.max(1, Math.ceil(totalItems.value / apprenantsPerPage)),
+)
 
 watch(refFil, () => {
   apprenantsPage.value = 1
@@ -167,11 +157,8 @@ onBeforeUnmount(() => {
 })
 
 // ── Stat counts (from API) ──
-const total = computed(() => statsData.value?.totalApprenants || apprenants.value.length)
-
-const avecSit = computed(() => {
-  return apprenants.value.filter(a => a.situations > 0).length
-})
+const total = computed(() => totalItems.value)
+const avecSit = computed(() => totalWithSituations.value)
 
 const statusClass = (s: ApprenantStatus) => {
   switch (s) {
@@ -301,7 +288,7 @@ async function downloadExport() {
         <!-- ── Apprenants grid ── -->
         <div class="rounded-2xl border border-slate-200 bg-white px-6 py-4">
           <div class="flex items-center justify-between pb-4">
-            <p class="text-sm text-slate-500">{{ filtered.length }} apprenant(s) trouvé(s)</p>
+            <p class="text-sm text-slate-500">{{ totalItems }} apprenant(s) trouvé(s)</p>
             <div v-if="totalApprenantPages > 1" class="flex items-center gap-2">
               <button
                 @click="apprenantsPage--"
