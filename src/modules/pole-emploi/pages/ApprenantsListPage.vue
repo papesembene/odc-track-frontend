@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { RouterLink } from "vue-router";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import {
@@ -120,6 +120,7 @@ async function loadApprenants() {
     const { items, pagination } = await getApprenants({
       page: currentPage.value,
       limit: 10,
+      search: searchQuery.value || undefined,
       promotionId: filterPromo.value || undefined,
       referentielId: filterRef.value || undefined,
     });
@@ -177,6 +178,7 @@ async function loadGlobalStats() {
   isGlobalStatsLoading.value = true;
   try {
     globalStats.value = await getStatistiques({
+      promotionId: filterPromo.value || undefined,
       includePromotions: false,
       includeReferentiels: false,
       includeSituationsRecentes: false,
@@ -191,8 +193,10 @@ async function loadGlobalStats() {
 // Chargement au montage
 onMounted(() => {
   loadFilters().then(() => {
-    loadApprenants();
-    loadGlobalStats();
+    if (!filterPromo.value) {
+      loadApprenants();
+      loadGlobalStats();
+    }
   });
 });
 
@@ -200,24 +204,35 @@ const searchQuery = ref("");
 const filterPromo = ref("");
 const filterRef = ref("");
 
-const filtered = computed(() => {
-  return rows.value.filter((row) => {
-    const q = searchQuery.value.toLowerCase();
-    if (
-      q &&
-      !row.name.toLowerCase().includes(q) &&
-      !row.email.toLowerCase().includes(q)
-    )
-      return false;
-    if (filterPromo.value && row.promoId !== filterPromo.value) return false;
-    if (filterRef.value && row.refId !== filterRef.value) return false;
-    return true;
-  });
-});
+const filtered = computed(() => rows.value);
 
 watch([filterPromo, filterRef], () => {
   currentPage.value = 1;
   loadApprenants();
+});
+
+watch(filterPromo, () => {
+  loadGlobalStats();
+});
+
+let searchReloadTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch(searchQuery, () => {
+  currentPage.value = 1;
+
+  if (searchReloadTimer) {
+    clearTimeout(searchReloadTimer);
+  }
+
+  searchReloadTimer = setTimeout(() => {
+    loadApprenants();
+  }, 300);
+});
+
+onBeforeUnmount(() => {
+  if (searchReloadTimer) {
+    clearTimeout(searchReloadTimer);
+  }
 });
 
 /**

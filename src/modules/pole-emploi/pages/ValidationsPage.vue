@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import ValidationCard from "@/modules/pole-emploi/components/ValidationCard.vue";
 import { showToast } from "../../../core/ui/toast";
@@ -41,8 +41,8 @@ async function loadFilters() {
     referentielsList.value = refData;
     activePromotion.value = await getActivePromotion();
 
-    if (!filterPromotion.value && activePromotion.value?.nom) {
-      filterPromotion.value = activePromotion.value.nom;
+    if (!filterPromotion.value && activePromotion.value?.id) {
+      filterPromotion.value = activePromotion.value.id;
     }
   } catch (error) {
     console.error("Erreur lors du chargement des filtres:", error);
@@ -56,7 +56,12 @@ async function loadFilters() {
 async function loadValidations() {
   isLoading.value = true;
   try {
-    const data = await getSituationsEnAttente();
+    const data = await getSituationsEnAttente({
+      search: searchQuery.value || undefined,
+      promotionId: filterPromotion.value || undefined,
+      referentielId: filterReferentiel.value || undefined,
+      statut: filterType.value || undefined,
+    });
 
     // Transformation des données API en format pour l'affichage
     items.value = data.map((item: any) => ({
@@ -73,7 +78,9 @@ async function loadValidations() {
       // Nom de l'entreprise (ou nom libre si pas d'entreprise enregistrée)
       entreprise: item.entreprise?.nom || item.nomEntrepriseLibre || "-",
       promotion: item.apprenant.promotion.nom,
+      promotionId: item.apprenant.promotion.id,
       referentiel: item.apprenant.referentiel.nom,
+      referentielId: item.apprenant.referentiel.id,
       // Formatage des dates en français
       debut: new Date(item.dateDebut).toLocaleDateString("fr-FR"),
       fin: item.dateFin
@@ -89,12 +96,6 @@ async function loadValidations() {
   }
 }
 
-// Chargement des données au montage du composant
-onMounted(async () => {
-  await loadFilters();
-  await loadValidations();
-});
-
 /**
  * Type TypeScript pour les données d'une situation à valider
  */
@@ -107,7 +108,9 @@ type ValidationItem = {
   typeCode: string;
   entreprise: string;
   promotion: string;
+  promotionId?: string;
   referentiel: string;
+  referentielId?: string;
   debut: string;
   fin: string;
   createdAt: string;
@@ -118,12 +121,43 @@ type ValidationItem = {
  */
 // Recherche textuelle par nom d'apprenant
 const searchQuery = ref("");
-// Filtre par promotion (nom de la promotion)
+// Filtre par promotion (id de la promotion)
 const filterPromotion = ref("");
-// Filtre par référentiel (nom du référentiel)
+// Filtre par référentiel (id du référentiel)
 const filterReferentiel = ref("");
 // Filtre par type de situation
 const filterType = ref("");
+
+// Chargement des données au montage du composant
+onMounted(async () => {
+  await loadFilters();
+
+  if (!filterPromotion.value) {
+    await loadValidations();
+  }
+});
+
+let searchReloadTimer: ReturnType<typeof setTimeout> | null = null;
+
+watch([filterPromotion, filterReferentiel, filterType], () => {
+  loadValidations();
+});
+
+watch(searchQuery, () => {
+  if (searchReloadTimer) {
+    clearTimeout(searchReloadTimer);
+  }
+
+  searchReloadTimer = setTimeout(() => {
+    loadValidations();
+  }, 300);
+});
+
+onBeforeUnmount(() => {
+  if (searchReloadTimer) {
+    clearTimeout(searchReloadTimer);
+  }
+});
 
 /**
  * Correspondance avec les vrais statuts backend.
@@ -147,37 +181,20 @@ function formatSituationType(type: string): string {
  * Computed: Liste des promotions pour le dropdown
  * Transforme la liste d'objets en tableau de noms
  */
-const promotions = computed(() => promotionsList.value.map((p) => p.nom));
+const promotions = computed(() => promotionsList.value);
 
 /**
  * Computed: Liste des référentiels pour le dropdown
  * Transforme la liste d'objets en tableau de noms
  */
-const referentiels = computed(() => referentielsList.value.map((r) => r.nom));
+const referentiels = computed(() => referentielsList.value);
 
 /**
  * Computed: Filtre intelligent des situations
  * Applique tous les filtres actifs (recherche, promotion, référentiel, type)
  */
 const filtered = computed(() => {
-  return items.value.filter((item) => {
-    // Filtre par nom (recherche textuelle)
-    const q = searchQuery.value.toLowerCase();
-    if (q && !item.name.toLowerCase().includes(q)) return false;
-
-    // Filtre par promotion
-    if (filterPromotion.value && item.promotion !== filterPromotion.value)
-      return false;
-
-    // Filtre par référentiel
-    if (filterReferentiel.value && item.referentiel !== filterReferentiel.value)
-      return false;
-
-    // Filtre par type de situation
-    if (filterType.value && item.typeCode !== filterType.value) return false;
-
-    return true;
-  });
+  return items.value;
 });
 
 /**
@@ -329,8 +346,8 @@ async function confirmReject() {
               class="w-full appearance-none bg-transparent text-sm text-slate-700 outline-none pr-5"
             >
               <option value="">Toutes les promotions</option>
-              <option v-for="p in promotions" :key="p" :value="p">
-                {{ p }}
+              <option v-for="p in promotions" :key="p.id" :value="p.id">
+                {{ p.nom }}
               </option>
             </select>
             <svg
@@ -355,8 +372,8 @@ async function confirmReject() {
               class="w-full appearance-none bg-transparent text-sm text-slate-700 outline-none pr-5"
             >
               <option value="">Tous les référentiels</option>
-              <option v-for="r in referentiels" :key="r" :value="r">
-                {{ r }}
+              <option v-for="r in referentiels" :key="r.id" :value="r.id">
+                {{ r.nom }}
               </option>
             </select>
             <svg

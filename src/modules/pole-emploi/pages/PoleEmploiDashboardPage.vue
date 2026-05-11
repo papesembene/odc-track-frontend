@@ -280,7 +280,7 @@ onMounted(loadStats);
       </section>
 
       <!-- ── Quick Access Cards ── -->
-      <div class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <RouterLink to="/validations">
           <QuickAccessCard
             title="Validations"
@@ -366,14 +366,14 @@ onMounted(loadStats);
           </QuickAccessCard>
         </RouterLink>
 
-        <RouterLink to="/import-apprenants">
+        <RouterLink to="/import-historique">
           <QuickAccessCard
-            title="Import"
-            subtitle="Importer des apprenants"
-            icon-bg-class="bg-green-50"
+            title="Import historique"
+            subtitle="Anciennes promotions"
+            icon-bg-class="bg-amber-50"
           >
             <svg
-              class="h-5 w-5 text-green-500"
+              class="h-5 w-5 text-amber-500"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -387,6 +387,7 @@ onMounted(loadStats);
             </svg>
           </QuickAccessCard>
         </RouterLink>
+
       </div>
 
       <!-- ── Activité récente ── -->

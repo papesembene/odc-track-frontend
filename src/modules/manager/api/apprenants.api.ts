@@ -52,6 +52,9 @@ export type ApprenantsPagination = {
     totalItems: number;
     totalPages: number;
   };
+  summary?: {
+    totalWithSituations: number;
+  };
 };
 
 /**
@@ -87,6 +90,7 @@ export type SituationItem = {
  */
 export type ApprenantDetail = {
   id: string;
+  localId?: string | null;
   telephone: string | null;
   user: {
     id: string;
@@ -134,13 +138,22 @@ export async function getApprenants(
   if (query?.referentielId) params.append("referentielId", query.referentielId);
 
   const queryString = params.toString();
-  const url = queryString ? `/apprenants?${queryString}` : "/apprenants";
+  const url = queryString ? `/apprenants/master-data?${queryString}` : "/apprenants/master-data";
 
   const res = await api.get(url);
   const items = extractApiItems<ApprenantListItem>(res);
   const pagination = extractApiPagination(res);
+  const data = extractApiData<any>(res);
 
-  return { items, pagination };
+  return {
+    items,
+    pagination,
+    summary: data?.summary
+      ? {
+          totalWithSituations: Number(data.summary.totalWithSituations ?? 0),
+        }
+      : undefined,
+  };
 }
 
 /**
@@ -152,7 +165,7 @@ export async function getApprenants(
 export async function getApprenantById(
   id: string,
 ): Promise<ApprenantDetail | null> {
-  const res = await api.get(`/apprenants/${id}`);
+  const res = await api.get(`/apprenants/master-data/${id}`);
   return extractApiData<ApprenantDetail | null>(res);
 }
 

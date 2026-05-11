@@ -20,6 +20,9 @@ export type PromotionItem = {
   nom: string;
   annee: number;
   estActive?: boolean;
+  totalApprenants?: number;
+  enEmploi?: number;
+  tauxInsertion?: number;
   createdAt?: string;
   updatedAt?: string;
   referentiels?: Array<{
@@ -65,7 +68,7 @@ export interface PromotionInput {
  * @returns Promesse avec la liste des promotions
  */
 export async function getPromotions(): Promise<PromotionsPagination> {
-  const res = await api.get("/promotions");
+  const res = await api.get("/promotions/master-data");
   return {
     items: extractApiItems<PromotionItem>(res),
     pagination: extractApiPagination(res),
@@ -78,7 +81,7 @@ export async function getPromotions(): Promise<PromotionsPagination> {
  * @returns Promesse avec la liste des référentiels
  */
 export async function getReferentiels(): Promise<ReferentielItem[]> {
-  const res = await api.get("/referentiels");
+  const res = await api.get("/referentiels/master-data");
   return extractApiItems<ReferentielItem>(res);
 }
 
@@ -99,7 +102,7 @@ export async function activatePromotion(id: string): Promise<PromotionItem> {
  * @returns Promesse avec la promotion active ou null
  */
 export async function getActivePromotion(): Promise<PromotionWithReferentiels | null> {
-  const res = await api.get("/promotions/active");
+  const res = await api.get("/promotions/master-data/active");
   return extractApiData<PromotionWithReferentiels | null>(res);
 }
 

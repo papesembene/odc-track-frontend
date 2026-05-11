@@ -11,11 +11,22 @@ export interface RowError {
   message: string;
 }
 
+export interface CreatedHistoricalAccount {
+  prenom: string;
+  nom: string;
+  email: string;
+  temporaryPassword: string;
+}
+
 export interface ImportResult {
   totalRows: number;
   createdCount: number;
   failedCount: number;
   errors: RowError[];
+  createdPromotions?: number;
+  createdReferentiels?: number;
+  createdSituations?: number;
+  createdAccounts?: CreatedHistoricalAccount[];
 }
 
 /**
@@ -58,4 +69,26 @@ export async function importApprenantsByReferentiel(
   );
 
   return res.data.data;
+}
+
+export async function importApprenantsHistorique(
+  promotionName: string,
+  referentialName: string,
+  file: File,
+): Promise<ImportResult> {
+  const formData = new FormData();
+  formData.append("promotionName", promotionName);
+  formData.append("referentialName", referentialName);
+  formData.append("file", file);
+
+  const res = await api.postForm("/apprenants/import/historique", formData);
+  return res.data.data;
+}
+
+export async function downloadHistoricalImportTemplate(): Promise<Blob> {
+  const res = await api.get("/apprenants/import/historique/template", {
+    responseType: "blob",
+  });
+
+  return res.data as Blob;
 }
