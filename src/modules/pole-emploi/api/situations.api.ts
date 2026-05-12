@@ -6,6 +6,7 @@ type PromotionOption = {
   nom: string;
   annee?: number;
   createdAt?: string;
+  estActive?: boolean;
 };
 
 type ReferentielOption = {

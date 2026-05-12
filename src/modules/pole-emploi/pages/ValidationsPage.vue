@@ -4,7 +4,6 @@ import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import ValidationCard from "@/modules/pole-emploi/components/ValidationCard.vue";
 import { showToast } from "../../../core/ui/toast";
 import {
-  getActivePromotion,
   getSituationsEnAttente,
   getPromotions,
   getReferentiels,
@@ -39,7 +38,8 @@ async function loadFilters() {
     ]);
     promotionsList.value = promData;
     referentielsList.value = refData;
-    activePromotion.value = await getActivePromotion();
+    activePromotion.value =
+      promData.find((promotion) => promotion.estActive) ?? null;
 
     if (!filterPromotion.value && activePromotion.value?.id) {
       filterPromotion.value = activePromotion.value.id;

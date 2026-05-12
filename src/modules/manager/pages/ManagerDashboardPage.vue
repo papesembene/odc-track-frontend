@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
-import { getActivePromotion, getPromotions, type PromotionItem } from '@/modules/manager/api/promotions.api'
+import { getPromotions, type PromotionItem } from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 
@@ -21,7 +21,9 @@ async function loadDashboard() {
 
   try {
     const activePromo =
-      activePromotion.value ?? (await getActivePromotion())
+      activePromotion.value ??
+      promotionOptions.value.find((promotion) => promotion.estActive) ??
+      null
     const stats = await getStatistiques({
       promotionId: selectedPromotionId.value || activePromo?.id || undefined,
       includePromotions: true,
@@ -47,14 +49,12 @@ async function handlePromotionChange() {
 // ── Fetch data on mount ──
 onMounted(async () => {
   try {
-    const [allPromotions, activePromo] = await Promise.all([
-      getPromotions(),
-      getActivePromotion(),
-    ])
+    const allPromotions = await getPromotions()
 
     promotionOptions.value = allPromotions.items
-    activePromotion.value = activePromo
-    selectedPromotionId.value = activePromo?.id || ''
+    activePromotion.value =
+      allPromotions.items.find((promotion) => promotion.estActive) ?? null
+    selectedPromotionId.value = activePromotion.value?.id || ''
 
     await loadDashboard()
   } catch (e: any) {

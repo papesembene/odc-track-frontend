@@ -5,10 +5,7 @@ import {
   getStatistiques,
   type StatistiquesGlobales,
 } from "../api/statistiques.api";
-import {
-  getActivePromotion,
-  getPromotions,
-} from "../api/situations.api";
+import { getPromotions } from "../api/situations.api";
 import { showToast } from "../../../core/ui/toast";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import StatCard from "@/modules/pole-emploi/components/StatCard.vue";
@@ -89,14 +86,12 @@ const statusColor = (valide: boolean) =>
 // Chargement des statistiques au montage du composant
 onMounted(async () => {
   try {
-    const [allPromotions, currentActivePromotion] = await Promise.all([
-      getPromotions(),
-      getActivePromotion(),
-    ]);
+    const allPromotions = await getPromotions();
 
     promotions.value = allPromotions;
-    activePromotion.value = currentActivePromotion;
-    selectedPromotionId.value = currentActivePromotion?.id || "";
+    activePromotion.value =
+      allPromotions.find((promotion) => promotion.estActive) ?? null;
+    selectedPromotionId.value = activePromotion.value?.id || "";
 
     await loadStats();
   } catch (error: any) {
