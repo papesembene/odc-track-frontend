@@ -16,14 +16,14 @@ const error = ref<string | null>(null)
 // ── Fetch data on mount ──
 onMounted(async () => {
   try {
-    const [stats, activePromo] = await Promise.all([
-      getStatistiques({
-        includePromotions: true,
-        includeReferentiels: false,
-        includeSituationsRecentes: true,
-      }),
-      getActivePromotion()
-    ])
+    const activePromo = await getActivePromotion()
+    const stats = await getStatistiques({
+      promotionId: activePromo?.id || undefined,
+      includePromotions: true,
+      includeReferentiels: false,
+      includeSituationsRecentes: true,
+    })
+
     statsData.value = stats
     activePromotion.value = activePromo
     hasLoaded.value = true
