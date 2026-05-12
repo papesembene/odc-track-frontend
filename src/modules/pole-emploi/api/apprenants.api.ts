@@ -162,3 +162,13 @@ export async function exportApprenantsXlsx(
   const res = await api.get(url, { responseType: "blob" });
   return res.data as Blob;
 }
+
+export async function resendHistoricalCredentials(id: string): Promise<{
+  apprenantId: string;
+  email: string;
+  promotion: string;
+  message: string;
+} | null> {
+  const res = await api.post(`/apprenants/${id}/resend-historical-credentials`);
+  return res?.data?.data || null;
+}
