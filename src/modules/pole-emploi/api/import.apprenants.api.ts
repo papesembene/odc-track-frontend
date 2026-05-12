@@ -27,6 +27,8 @@ export interface ImportResult {
   createdReferentiels?: number;
   createdSituations?: number;
   createdAccounts?: CreatedHistoricalAccount[];
+  emailedAccounts?: number;
+  emailFailures?: number;
 }
 
 /**
