@@ -238,22 +238,26 @@ function formatTimeAgo(dateStr: string): string {
 
 // ── Computed promotions from data ──
 const promotions = computed(() => {
-  if (!statsData.value?.parPromotion) return []
-  
-  return statsData.value.parPromotion.map(p => {
-    const taux = p.total > 0 ? Math.round((p.enEmploi / p.total) * 100) : 0
-    const isActivePromotion = activePromotion.value?.id === p.promotionId
+  if (promotionOptions.value.length === 0) return []
+
+  return promotionOptions.value.map((promotion) => {
+    const taux = Math.round(promotion.tauxInsertion ?? 0)
+    const apprenants = promotion.totalApprenants ?? 0
+    const isActivePromotion = activePromotion.value?.id === promotion.id
+    const isSelectedPromotion = selectedPromotionId.value === promotion.id
     const statusClass = isActivePromotion
       ? 'border-slate-300 text-slate-700 bg-slate-100'
-      : 'border-slate-200 text-slate-500 bg-slate-50'
+      : isSelectedPromotion
+        ? 'border-orange-200 text-orange-700 bg-orange-50'
+        : 'border-slate-200 text-slate-500 bg-slate-50'
     
     return {
-      name: p.promotionNom,
-      status: isActivePromotion ? 'Active' : 'Suivi',
+      name: promotion.nom,
+      status: isActivePromotion ? 'Active' : isSelectedPromotion ? 'Consultée' : 'Suivi',
       statusClass,
-      apprenants: p.total,
+      apprenants,
       taux,
-      hasTaux: p.total > 0,
+      hasTaux: apprenants > 0,
     }
   })
 })
