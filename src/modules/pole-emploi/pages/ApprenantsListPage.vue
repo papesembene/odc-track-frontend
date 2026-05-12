@@ -7,7 +7,6 @@ import {
   getApprenants,
 } from "../api/apprenants.api";
 import {
-  getActivePromotion,
   getPromotions,
   getReferentiels,
 } from "../api/situations.api";
@@ -92,19 +91,19 @@ const totalPages = ref(1);
  */
 async function loadFilters() {
   try {
-    const [promos, refs, activePromo] = await Promise.all([
+    const [promos, refs] = await Promise.all([
       getPromotions(),
       getReferentiels(),
-      getActivePromotion(),
     ]);
     promotionsList.value = promos;
     referentielsList.value = refs;
-    activePromotion.value = activePromo;
+    activePromotion.value =
+      promos.find((promotion) => promotion.estActive) ?? null;
 
     // Le pôle emploi démarre sur la promotion active pour coller au flux métier
     // courant, tout en gardant la possibilité de changer le filtre ensuite.
-    if (!filterPromo.value && activePromo?.id) {
-      filterPromo.value = activePromo.id;
+    if (!filterPromo.value && activePromotion.value?.id) {
+      filterPromo.value = activePromotion.value.id;
     }
   } catch (error) {
     console.error("Erreur chargement filtres:", error);

@@ -5,7 +5,7 @@ import {
   getStatistiques,
   type StatistiquesGlobales,
 } from "../api/statistiques.api";
-import { getActivePromotion, getPromotions } from "../api/situations.api";
+import { getPromotions } from "../api/situations.api";
 import { showToast } from "../../../core/ui/toast";
 import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
@@ -112,11 +112,12 @@ async function loadStats() {
 }
 
 onMounted(() => {
-  Promise.all([getActivePromotion(), getPromotions()])
-    .then(([promotion, promotions]) => {
-      activePromotion.value = promotion;
+  getPromotions()
+    .then((promotions) => {
       promotionsList.value = promotions;
-      selectedPromotionId.value = promotion?.id ?? "";
+      activePromotion.value =
+        promotions.find((promotion) => promotion.estActive) ?? null;
+      selectedPromotionId.value = activePromotion.value?.id ?? "";
     })
     .catch(() => {
       activePromotion.value = null;
