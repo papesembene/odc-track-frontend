@@ -11,8 +11,8 @@ import {
   type ImportResult,
 } from "../api/import.apprenants.api";
 import {
+  getReferentiels,
   getLocalPromotions,
-  getLocalReferentiels,
 } from "../api/situations.api";
 
 const selectedFile = ref<File | null>(null);
@@ -22,11 +22,9 @@ const isDownloadingTemplate = ref(false);
 const importResult = ref<ImportResult | null>(null);
 const isLoadingOptions = ref(false);
 const promotionMode = ref<"existing" | "new">("existing");
-const referentialMode = ref<"existing" | "new">("existing");
 const selectedPromotionName = ref("");
 const newPromotionName = ref("");
 const selectedReferentialName = ref("");
-const newReferentialName = ref("");
 const promotions = ref<Array<{ id: string; nom: string }>>([]);
 const referentials = ref<Array<{ id: string; nom: string }>>([]);
 
@@ -76,9 +74,7 @@ const promotionName = computed(() =>
 );
 
 const referentialName = computed(() =>
-  referentialMode.value === "existing"
-    ? selectedReferentialName.value.trim()
-    : newReferentialName.value.trim(),
+  selectedReferentialName.value.trim(),
 );
 
 const canImport = computed(
@@ -94,7 +90,7 @@ async function loadOptions() {
   try {
     const [promotionItems, referentialItems] = await Promise.all([
       getLocalPromotions(),
-      getLocalReferentiels(),
+      getReferentiels(),
     ]);
 
     promotions.value = promotionItems;
@@ -110,8 +106,6 @@ async function loadOptions() {
     const firstReferential = referentialItems[0];
     if (firstReferential) {
       selectedReferentialName.value = firstReferential.nom;
-    } else {
-      referentialMode.value = "new";
     }
   } catch (error: any) {
     showToast(
@@ -265,9 +259,6 @@ async function handleImport() {
     if (promotionMode.value === "new") {
       newPromotionName.value = "";
     }
-    if (referentialMode.value === "new") {
-      newReferentialName.value = "";
-    }
   } catch (error: any) {
     showToast(error?.message || "Erreur lors de l'import historique", "error");
   } finally {
@@ -352,7 +343,8 @@ onMounted(() => {
             </p>
             <p>
               Vous devez choisir <strong>une seule promotion</strong> et
-              <strong>un seul referentiel</strong> avant l'import.
+              <strong>un seul referentiel issu de in-odc</strong> avant
+              l'import.
             </p>
             <p>
               Si la promotion existe deja dans in-odc, l'import sera refuse
@@ -492,34 +484,7 @@ onMounted(() => {
           <h3 class="text-sm font-bold text-slate-900">
             Referentiel cible
           </h3>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
-              :class="
-                referentialMode === 'existing'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-slate-100 text-slate-600'
-              "
-              @click="referentialMode = 'existing'"
-            >
-              Selectionner
-            </button>
-            <button
-              type="button"
-              class="rounded-full px-3 py-1.5 text-xs font-semibold transition-colors"
-              :class="
-                referentialMode === 'new'
-                  ? 'bg-orange-500 text-white'
-                  : 'bg-slate-100 text-slate-600'
-              "
-              @click="referentialMode = 'new'"
-            >
-              Creer nouveau
-            </button>
-          </div>
           <select
-            v-if="referentialMode === 'existing'"
             v-model="selectedReferentialName"
             class="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-orange-400 disabled:bg-slate-50"
             :disabled="isLoadingOptions || referentials.length === 0"
@@ -539,15 +504,8 @@ onMounted(() => {
               {{ referential.nom }}
             </option>
           </select>
-          <input
-            v-else
-            v-model="newReferentialName"
-            type="text"
-            placeholder="Ex: DEV WEB MOBILE"
-            class="mt-4 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none focus:border-orange-400"
-          />
           <p class="mt-2 text-xs text-slate-500">
-            Un seul referentiel par import.
+            Un seul referentiel par import, selectionne depuis in-odc.
           </p>
         </div>
       </div>
