@@ -5,6 +5,10 @@ import {
   getStatistiques,
   type StatistiquesGlobales,
 } from "../api/statistiques.api";
+import {
+  getActivePromotion,
+  getPromotions,
+} from "../api/situations.api";
 import { showToast } from "../../../core/ui/toast";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import StatCard from "@/modules/pole-emploi/components/StatCard.vue";
@@ -14,6 +18,11 @@ import QuickAccessCard from "@/modules/pole-emploi/components/QuickAccessCard.vu
  * Indicateur de chargement des données
  */
 const isLoading = ref(true);
+const promotions = ref<Array<{ id: string; nom: string; annee?: number }>>([]);
+const activePromotion = ref<{ id: string; nom: string; annee?: number } | null>(
+  null,
+);
+const selectedPromotionId = ref("");
 
 /**
  * État des statistiques globales du dashboard.
@@ -45,6 +54,8 @@ async function loadStats() {
   isLoading.value = true;
   try {
     stats.value = await getStatistiques({
+      promotionId:
+        selectedPromotionId.value || activePromotion.value?.id || undefined,
       includePromotions: false,
       includeReferentiels: false,
       includeSituationsRecentes: true,
@@ -57,6 +68,10 @@ async function loadStats() {
   } finally {
     isLoading.value = false;
   }
+}
+
+async function handlePromotionChange() {
+  await loadStats();
 }
 
 /**
@@ -72,7 +87,26 @@ const statusColor = (valide: boolean) =>
     : "bg-amber-100 text-amber-700 border-amber-200";
 
 // Chargement des statistiques au montage du composant
-onMounted(loadStats);
+onMounted(async () => {
+  try {
+    const [allPromotions, currentActivePromotion] = await Promise.all([
+      getPromotions(),
+      getActivePromotion(),
+    ]);
+
+    promotions.value = allPromotions;
+    activePromotion.value = currentActivePromotion;
+    selectedPromotionId.value = currentActivePromotion?.id || "";
+
+    await loadStats();
+  } catch (error: any) {
+    const msg =
+      error?.response?.data?.message ||
+      "Impossible de charger les promotions du dashboard";
+    showToast(msg, "error");
+    isLoading.value = false;
+  }
+});
 </script>
 
 <template>
@@ -105,6 +139,25 @@ onMounted(loadStats);
             <p class="mt-1 text-sm text-orange-100">
               Vue d'ensemble de l'insertion professionnelle
             </p>
+            <div class="mt-4 flex max-w-xs flex-col gap-2">
+              <label class="text-xs font-semibold uppercase tracking-wide text-orange-100/80">
+                Promotion
+              </label>
+              <select
+                v-model="selectedPromotionId"
+                class="rounded-xl border border-white/20 bg-white/15 px-3 py-2 text-sm text-white outline-none"
+                @change="handlePromotionChange"
+              >
+                <option
+                  v-for="promotion in promotions"
+                  :key="promotion.id"
+                  :value="promotion.id"
+                  class="text-slate-900"
+                >
+                  {{ promotion.nom }}{{ promotion.annee ? ` (${promotion.annee})` : "" }}
+                </option>
+              </select>
+            </div>
           </div>
           <div class="flex shrink-0 gap-4">
             <div class="rounded-2xl bg-white/15 px-5 py-3 text-center">

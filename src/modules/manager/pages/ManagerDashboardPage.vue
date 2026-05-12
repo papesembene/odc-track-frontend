@@ -2,23 +2,28 @@
 import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
-import { getActivePromotion, type PromotionItem } from '@/modules/manager/api/promotions.api'
+import { getActivePromotion, getPromotions, type PromotionItem } from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 
 // ── Data from API ──
 const statsData = ref<StatistiquesGlobales | null>(null)
 const activePromotion = ref<PromotionItem | null>(null)
+const promotionOptions = ref<PromotionItem[]>([])
+const selectedPromotionId = ref('')
 const loading = ref(true)
 const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 
-// ── Fetch data on mount ──
-onMounted(async () => {
+async function loadDashboard() {
+  loading.value = true
+  error.value = null
+
   try {
-    const activePromo = await getActivePromotion()
+    const activePromo =
+      activePromotion.value ?? (await getActivePromotion())
     const stats = await getStatistiques({
-      promotionId: activePromo?.id || undefined,
+      promotionId: selectedPromotionId.value || activePromo?.id || undefined,
       includePromotions: true,
       includeReferentiels: false,
       includeSituationsRecentes: true,
@@ -31,6 +36,30 @@ onMounted(async () => {
     error.value = e.message || 'Erreur lors du chargement des données'
     console.error('Erreur:', e)
   } finally {
+    loading.value = false
+  }
+}
+
+async function handlePromotionChange() {
+  await loadDashboard()
+}
+
+// ── Fetch data on mount ──
+onMounted(async () => {
+  try {
+    const [allPromotions, activePromo] = await Promise.all([
+      getPromotions(),
+      getActivePromotion(),
+    ])
+
+    promotionOptions.value = allPromotions.items
+    activePromotion.value = activePromo
+    selectedPromotionId.value = activePromo?.id || ''
+
+    await loadDashboard()
+  } catch (e: any) {
+    error.value = e.message || 'Erreur lors du chargement des données'
+    console.error('Erreur:', e)
     loading.value = false
   }
 })
@@ -263,6 +292,24 @@ const promotions = computed(() => {
             <div class="text-sm text-slate-500">
               Données filtrées automatiquement
             </div>
+          </div>
+          <div class="mt-4 flex flex-col gap-2 sm:max-w-xs">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Promotion
+            </label>
+            <select
+              v-model="selectedPromotionId"
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-orange-400"
+              @change="handlePromotionChange"
+            >
+              <option
+                v-for="promotion in promotionOptions"
+                :key="promotion.id"
+                :value="promotion.id"
+              >
+                {{ promotion.nom }} ({{ promotion.annee }})
+              </option>
+            </select>
           </div>
         </div>
 
