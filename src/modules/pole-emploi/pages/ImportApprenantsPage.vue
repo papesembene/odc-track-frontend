@@ -48,7 +48,7 @@ const optionalColumns = [
 function downloadCreatedAccounts(accounts: CreatedHistoricalAccount[]) {
   if (!accounts.length) return;
 
-  const escapeCsv = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  const escapeCsv = (value: string) => `"${value.replace(/"/g, '""')}"`;
   const rows = [
     ["prenom", "nom", "email", "mot_de_passe_temporaire"],
     ...accounts.map((account) => [
@@ -100,14 +100,16 @@ async function loadOptions() {
     promotions.value = promotionItems;
     referentials.value = referentialItems;
 
-    if (promotionItems.length > 0) {
-      selectedPromotionName.value = promotionItems[0].nom;
+    const firstPromotion = promotionItems[0];
+    if (firstPromotion) {
+      selectedPromotionName.value = firstPromotion.nom;
     } else {
       promotionMode.value = "new";
     }
 
-    if (referentialItems.length > 0) {
-      selectedReferentialName.value = referentialItems[0].nom;
+    const firstReferential = referentialItems[0];
+    if (firstReferential) {
+      selectedReferentialName.value = firstReferential.nom;
     } else {
       referentialMode.value = "new";
     }
