@@ -7,6 +7,7 @@ type PromotionOption = {
   annee?: number;
   createdAt?: string;
   estActive?: boolean;
+  statut?: string;
   totalApprenants?: number;
   enEmploi?: number;
   tauxInsertion?: number;

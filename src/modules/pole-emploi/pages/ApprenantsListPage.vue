@@ -5,6 +5,7 @@ import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import {
   exportApprenantsXlsx,
   getApprenants,
+  resendHistoricalCredentials,
 } from "../api/apprenants.api";
 import {
   getPromotions,
@@ -42,6 +43,7 @@ type PromotionOption = {
   id: string;
   nom: string;
   annee?: number;
+  statut?: string;
 };
 
 /**
@@ -79,6 +81,7 @@ const activePromotion = ref<PromotionOption | null>(null);
  */
 const isLoading = ref(true);
 const exportLoading = ref(false);
+const resendingIds = ref<string[]>([]);
 
 /**
  * Pagination
@@ -204,6 +207,12 @@ const filterPromo = ref("");
 const filterRef = ref("");
 
 const filtered = computed(() => rows.value);
+const selectedPromotion = computed(() =>
+  promotionsList.value.find((promotion) => promotion.id === filterPromo.value) ?? null,
+);
+const isHistoricalPromotionSelected = computed(
+  () => selectedPromotion.value?.statut === "HISTORIQUE",
+);
 
 watch([filterPromo, filterRef], () => {
   currentPage.value = 1;
@@ -268,6 +277,30 @@ async function downloadExport() {
     );
   } finally {
     exportLoading.value = false;
+  }
+}
+
+async function resendCredentials(row: Row) {
+  if (resendingIds.value.includes(row.id)) {
+    return;
+  }
+
+  resendingIds.value = [...resendingIds.value, row.id];
+
+  try {
+    const result = await resendHistoricalCredentials(row.id);
+    showToast(
+      result?.message ||
+        `Identifiants renvoyés à ${row.email}`,
+      "success",
+    );
+  } catch (error: any) {
+    showToast(
+      error?.response?.data?.message || "Erreur lors du renvoi des identifiants",
+      "error",
+    );
+  } finally {
+    resendingIds.value = resendingIds.value.filter((id) => id !== row.id);
   }
 }
 </script>
@@ -690,23 +723,38 @@ async function downloadExport() {
                   </span>
                 </td>
                 <td class="px-5 py-4">
-                  <RouterLink
-                    :to="`/apprenants/${row.id}`"
-                    class="inline-flex items-center gap-1 text-sm font-semibold text-orange-500 transition-colors hover:text-orange-600"
-                  >
-                    Voir détails
-                    <svg
-                      class="h-3.5 w-3.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                  <div class="flex items-center gap-3">
+                    <RouterLink
+                      :to="`/apprenants/${row.id}`"
+                      class="inline-flex items-center gap-1 text-sm font-semibold text-orange-500 transition-colors hover:text-orange-600"
                     >
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </RouterLink>
+                      Voir détails
+                      <svg
+                        class="h-3.5 w-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </RouterLink>
+                    <button
+                      v-if="isHistoricalPromotionSelected"
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                      :disabled="resendingIds.includes(row.id)"
+                      @click.stop="resendCredentials(row)"
+                    >
+                      {{
+                        resendingIds.includes(row.id)
+                          ? "Envoi..."
+                          : "Renvoyer les identifiants"
+                      }}
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
