@@ -50,8 +50,17 @@ const refFil = ref('')
 const apprenantsPage = ref(1)
 const apprenantsPerPage = 12
 
+function goToApprenantsPage(page: number) {
+  if (page < 1 || page > totalApprenantPages.value) {
+    return
+  }
+
+  apprenantsPage.value = page
+}
+
 async function loadApprenants() {
   loading.value = true
+  error.value = null
 
   try {
     const apprenantsResult = await getApprenants({
@@ -148,6 +157,10 @@ watch(search, () => {
   apprenantsReloadTimer = setTimeout(() => {
     loadApprenants()
   }, 300)
+})
+
+watch(apprenantsPage, () => {
+  loadApprenants()
 })
 
 onBeforeUnmount(() => {
@@ -291,7 +304,7 @@ async function downloadExport() {
             <p class="text-sm text-slate-500">{{ totalItems }} apprenant(s) trouvé(s)</p>
             <div v-if="totalApprenantPages > 1" class="flex items-center gap-2">
               <button
-                @click="apprenantsPage--"
+                @click="goToApprenantsPage(apprenantsPage - 1)"
                 :disabled="apprenantsPage <= 1"
                 class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
               >
@@ -301,7 +314,7 @@ async function downloadExport() {
                 {{ apprenantsPage }} / {{ totalApprenantPages }}
               </span>
               <button
-                @click="apprenantsPage++"
+                @click="goToApprenantsPage(apprenantsPage + 1)"
                 :disabled="apprenantsPage >= totalApprenantPages"
                 class="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50"
               >

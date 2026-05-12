@@ -73,6 +73,15 @@ function statusClass(item: CoachApprenantListItem) {
   return 'bg-amber-100 text-amber-600'
 }
 
+function goToPage(page: number) {
+  if (page < 1 || page > totalPages.value) {
+    return
+  }
+
+  currentPage.value = page
+  loadApprenants()
+}
+
 onMounted(loadApprenants)
 </script>
 
@@ -198,7 +207,7 @@ onMounted(loadApprenants)
           type="button"
           class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 disabled:opacity-50"
           :disabled="currentPage <= 1"
-          @click="currentPage -= 1; loadApprenants()"
+          @click="goToPage(currentPage - 1)"
         >
           Précédent
         </button>
@@ -207,7 +216,7 @@ onMounted(loadApprenants)
           type="button"
           class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-600 disabled:opacity-50"
           :disabled="currentPage >= totalPages"
-          @click="currentPage += 1; loadApprenants()"
+          @click="goToPage(currentPage + 1)"
         >
           Suivant
         </button>
