@@ -300,8 +300,8 @@ onMounted(() => {
               Import anciennes promotions
             </h2>
             <p class="mt-1 text-sm text-orange-100">
-              Choisissez une promotion historique et un referentiel, puis
-              importez uniquement les apprenants de ce cadre.
+              1 import = 1 promotion historique + 1 referentiel + le fichier
+              des apprenants.
             </p>
           </div>
 
@@ -331,87 +331,47 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 class="text-sm font-bold text-slate-900">
-            Quand utiliser cet import
-          </h3>
-          <div class="mt-4 space-y-3 text-sm text-slate-600">
-            <p>
-              Cet import est reserve aux apprenants des anciennes promotions qui
-              n'existent pas encore dans <strong>in-odc</strong>.
-            </p>
-            <p>
-              Vous devez choisir <strong>une seule promotion</strong> et
-              <strong>un seul referentiel issu de in-odc</strong> avant
-              l'import.
-            </p>
-            <p>
-              Si la promotion existe deja dans in-odc, l'import sera refuse
-              pour eviter les doublons. Si un statut d'insertion est fourni,
-              une situation
-              professionnelle historique sera creee automatiquement.
-            </p>
-            <p>
-              Chaque apprenant historique importe recevra un
-              <strong>compte local Suivi insertion</strong>.
-            </p>
-          </div>
+      <div class="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-900 shadow-sm">
+        <p class="font-semibold">Fonctionnement</p>
+        <p class="mt-1">
+          Vous choisissez une promotion historique, puis un referentiel. Le
+          fichier importe ensuite uniquement les apprenants de ce couple
+          promotion + referentiel.
+        </p>
+        <p class="mt-1">
+          Chaque ancien apprenant importe recevra automatiquement un
+          <strong>compte local Suivi insertion</strong>.
+        </p>
+      </div>
 
-          <div class="mt-6 grid gap-4 lg:grid-cols-2">
-            <div class="rounded-xl bg-slate-50 p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Colonnes obligatoires
-              </p>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <span
-                  v-for="column in requiredColumns"
-                  :key="column"
-                  class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700"
-                >
-                  {{ column }}
-                </span>
-              </div>
-            </div>
-
-            <div class="rounded-xl bg-slate-50 p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Colonnes optionnelles
-              </p>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <span
-                  v-for="column in optionalColumns"
-                  :key="column"
-                  class="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
-                >
-                  {{ column }}
-                </span>
-              </div>
-            </div>
+      <div class="grid gap-4 lg:grid-cols-2">
+        <div class="rounded-xl bg-white p-4 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Colonnes obligatoires
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span
+              v-for="column in requiredColumns"
+              :key="column"
+              class="rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700"
+            >
+              {{ column }}
+            </span>
           </div>
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 class="text-sm font-bold text-slate-900">Regles de saisie</h3>
-          <div class="mt-4 space-y-3 text-sm text-slate-600">
-            <p>Dates conseillees : <strong>YYYY-MM-DD</strong></p>
-            <p>Sexe conseille : <strong>M</strong> ou <strong>F</strong></p>
-            <p>
-              Statuts acceptes : En emploi, En stage, Projet perso, Poursuite
-              etudes, Recherche emploi
-            </p>
-            <p>
-              Le nom de promotion doit idealement contenir l'annee, par exemple
-              <strong>PROMOTION 2023</strong>.
-            </p>
-            <p>
-              Apres import, un fichier des
-              <strong>identifiants temporaires</strong> sera telecharge.
-            </p>
-            <p>
-              Les apprenants devront
-              <strong>changer leur mot de passe a la premiere connexion</strong>.
-            </p>
+        <div class="rounded-xl bg-white p-4 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Colonnes optionnelles
+          </p>
+          <div class="mt-3 flex flex-wrap gap-2">
+            <span
+              v-for="column in optionalColumns"
+              :key="column"
+              class="rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700"
+            >
+              {{ column }}
+            </span>
           </div>
         </div>
       </div>
@@ -482,7 +442,7 @@ onMounted(() => {
 
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h3 class="text-sm font-bold text-slate-900">
-            Referentiel cible
+            Referentiel (in-odc)
           </h3>
           <select
             v-model="selectedReferentialName"
@@ -505,7 +465,7 @@ onMounted(() => {
             </option>
           </select>
           <p class="mt-2 text-xs text-slate-500">
-            Un seul referentiel par import, selectionne depuis in-odc.
+            Choisissez le referentiel des apprenants importes.
           </p>
         </div>
       </div>
@@ -514,9 +474,8 @@ onMounted(() => {
         <div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <p class="font-semibold">Important</p>
           <p class="mt-1">
-            Conservez le fichier des comptes telecharge apres l'import. Il
-            contient les emails et mots de passe temporaires a remettre aux
-            apprenants historiques.
+            Apres import, un fichier des comptes sera telecharge. Il contient
+            les identifiants temporaires des anciens apprenants.
           </p>
         </div>
 
@@ -669,8 +628,7 @@ onMounted(() => {
           v-if="(importResult.createdAccounts?.length ?? 0) > 0"
           class="mt-4 text-sm text-slate-600"
         >
-          Le fichier des comptes temporaires a ete telecharge automatiquement
-          apres cet import.
+          Le fichier des comptes temporaires a ete telecharge.
         </p>
       </div>
 
