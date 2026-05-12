@@ -219,6 +219,8 @@ async function handleImport() {
             <p><strong>Referentiels crees:</strong> ${result.createdReferentiels ?? 0}</p>
             <p><strong>Situations creees:</strong> ${result.createdSituations ?? 0}</p>
             <p><strong>Comptes locaux crees:</strong> ${result.createdAccounts?.length ?? 0}</p>
+            <p><strong>Emails envoyes:</strong> ${result.emailedAccounts ?? 0}</p>
+            <p><strong>Emails en echec:</strong> ${result.emailFailures ?? 0}</p>
             <p><strong>Erreurs:</strong> ${result.failedCount}</p>
             <hr style="margin:10px 0;">
             <div style="max-height:220px;overflow-y:auto;background:#fef2f2;padding:10px;border-radius:8px;">
@@ -240,6 +242,8 @@ async function handleImport() {
             <p><strong>Referentiels crees:</strong> ${result.createdReferentiels ?? 0}</p>
             <p><strong>Situations creees:</strong> ${result.createdSituations ?? 0}</p>
             <p><strong>Comptes locaux crees:</strong> ${result.createdAccounts?.length ?? 0}</p>
+            <p><strong>Emails envoyes:</strong> ${result.emailedAccounts ?? 0}</p>
+            <p><strong>Emails en echec:</strong> ${result.emailFailures ?? 0}</p>
           </div>
         `,
         confirmButtonText: "OK",
@@ -251,6 +255,13 @@ async function handleImport() {
       downloadCreatedAccounts(result.createdAccounts);
       showToast(
         "Le fichier des comptes crees a ete telecharge automatiquement.",
+        "success",
+      );
+    }
+
+    if ((result.emailedAccounts ?? 0) > 0) {
+      showToast(
+        `${result.emailedAccounts} email(s) d'identifiants envoye(s).`,
         "success",
       );
     }
