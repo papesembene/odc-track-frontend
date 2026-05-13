@@ -211,10 +211,8 @@ async function loadGlobalStats() {
 // Chargement au montage
 onMounted(() => {
   loadFilters().then(() => {
-    if (!filterPromo.value) {
-      loadApprenants();
-      loadGlobalStats();
-    }
+    loadApprenants();
+    loadGlobalStats();
   });
 });
 
