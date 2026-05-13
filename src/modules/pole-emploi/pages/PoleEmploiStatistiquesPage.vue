@@ -124,7 +124,7 @@ async function loadStats() {
 }
 
 onMounted(() => {
-  getPromotions()
+  getPromotions({ includeMetrics: false })
     .then((promotions) => {
       promotionsList.value = promotions;
       activePromotion.value =

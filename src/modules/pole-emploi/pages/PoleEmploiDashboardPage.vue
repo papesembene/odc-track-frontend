@@ -86,7 +86,7 @@ const statusColor = (valide: boolean) =>
 // Chargement des statistiques au montage du composant
 onMounted(async () => {
   try {
-    const allPromotions = await getPromotions();
+    const allPromotions = await getPromotions({ includeMetrics: false });
 
     promotions.value = allPromotions;
     activePromotion.value =

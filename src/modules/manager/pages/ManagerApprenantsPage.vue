@@ -9,6 +9,8 @@ import {
 } from '@/modules/manager/api/apprenants.api'
 import {
   getActivePromotion,
+  getPromotions,
+  type PromotionItem,
   type PromotionWithReferentiels,
 } from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
@@ -44,10 +46,14 @@ const exportLoading = ref(false)
 let apprenantsReloadTimer: ReturnType<typeof setTimeout> | null = null
 
 // ── Filters (from active promotion) ──
+const promotions = ref<PromotionItem[]>([])
 const refs = ref<{ id: string; nom: string }[]>([])
 
 const search = ref(
   typeof route.query.search === 'string' ? route.query.search : '',
+)
+const promotionFil = ref(
+  typeof route.query.promotionId === 'string' ? route.query.promotionId : '',
 )
 const refFil = ref(
   typeof route.query.referentielId === 'string' ? route.query.referentielId : '',
@@ -64,6 +70,10 @@ const currentListQuery = computed(() => {
 
   if (search.value.trim()) {
     query.search = search.value.trim()
+  }
+
+  if (promotionFil.value) {
+    query.promotionId = promotionFil.value
   }
 
   if (refFil.value) {
@@ -98,6 +108,7 @@ async function loadApprenants() {
       page: apprenantsPage.value,
       limit: apprenantsPerPage,
       search: search.value || undefined,
+      promotionId: promotionFil.value || undefined,
       referentielId: refFil.value || undefined,
     })
 
@@ -116,9 +127,27 @@ async function loadApprenants() {
 // ── Fetch data on mount ──
 onMounted(async () => {
   try {
-    const activePromotion = await getActivePromotion()
-    refs.value = ((activePromotion as PromotionWithReferentiels | null)?.referentiels ?? [])
-      .map(({ referentiel }) => ({ id: referentiel.id, nom: referentiel.nom }))
+    const [promotionsData, activePromotion] = await Promise.all([
+      getPromotions({ includeMetrics: false }),
+      getActivePromotion(),
+    ])
+
+    promotions.value = promotionsData.items
+
+    if (!promotionFil.value && activePromotion?.id) {
+      promotionFil.value = activePromotion.id
+    }
+
+    const selectedPromotion =
+      promotionsData.items.find(
+        (promotion): promotion is PromotionWithReferentiels =>
+          promotion.id === promotionFil.value,
+      ) ?? null
+
+    refs.value = (selectedPromotion?.referentiels ?? []).map(({ referentiel }) => ({
+      id: referentiel.id,
+      nom: referentiel.nom,
+    }))
 
     await loadApprenants()
     hasLoaded.value = true
@@ -179,6 +208,28 @@ watch(refFil, () => {
   loadApprenants()
 })
 
+watch(promotionFil, (promotionId) => {
+  apprenantsPage.value = 1
+
+  const selectedPromotion =
+    promotions.value.find(
+      (promotion): promotion is PromotionWithReferentiels =>
+        promotion.id === promotionId,
+    ) ?? null
+
+  refs.value = (selectedPromotion?.referentiels ?? []).map(({ referentiel }) => ({
+    id: referentiel.id,
+    nom: referentiel.nom,
+  }))
+
+  if (!refs.value.some((referentiel) => referentiel.id === refFil.value)) {
+    refFil.value = ''
+  }
+
+  syncRouteQuery()
+  loadApprenants()
+})
+
 watch(search, () => {
   apprenantsPage.value = 1
 
@@ -222,6 +273,7 @@ async function downloadExport() {
   try {
     const blob = await exportApprenantsXlsx({
       search: search.value || undefined,
+      promotionId: promotionFil.value || undefined,
       referentielId: refFil.value || undefined,
     })
 
@@ -293,7 +345,7 @@ async function downloadExport() {
           </article>
         </div>
 
-        <!-- ── Search & Filters (only referentiel - promo is already filtered by backend) ── -->
+        <!-- ── Search & Filters ── -->
         <div class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <!-- Search -->
           <div class="relative min-w-0 flex-1">
@@ -308,7 +360,20 @@ async function downloadExport() {
               class="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none focus:border-orange-400 focus:bg-white transition-colors"
             />
           </div>
-          <!-- Ref filter (only referentiels from active promotion) -->
+          <select
+            v-model="promotionFil"
+            class="rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-orange-400 cursor-pointer"
+          >
+            <option value="">Toutes les promotions</option>
+            <option
+              v-for="promotion in promotions"
+              :key="promotion.id"
+              :value="promotion.id"
+            >
+              {{ promotion.nom }} ({{ promotion.annee }})
+            </option>
+          </select>
+
           <select
             v-model="refFil"
             class="rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-orange-400 cursor-pointer"

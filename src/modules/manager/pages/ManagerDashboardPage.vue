@@ -49,7 +49,7 @@ async function handlePromotionChange() {
 // ── Fetch data on mount ──
 onMounted(async () => {
   try {
-    const allPromotions = await getPromotions()
+    const allPromotions = await getPromotions({ includeMetrics: false })
 
     promotionOptions.value = allPromotions.items
     activePromotion.value =
