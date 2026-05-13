@@ -4,6 +4,7 @@ import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
 import {
   getPromotions,
+  type PromotionItem,
   type PromotionWithReferentiels,
 } from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
@@ -13,6 +14,8 @@ type Segment = { label: string; value: number; color: string; bg: string }
 // État
 const stats = ref<StatistiquesGlobales | null>(null)
 const activePromotion = ref<PromotionWithReferentiels | null>(null)
+const promotionOptions = ref<PromotionItem[]>([])
+const selectedPromotionId = ref('')
 const isLoading = ref(true)
 const hasLoaded = ref(false)
 const error = ref<string | null>(null)
@@ -90,14 +93,18 @@ async function loadStats() {
   isLoading.value = true
   error.value = null
   try {
-    const promotionsData = await getPromotions({ includeMetrics: false })
     const activePromo =
-      (promotionsData.items.find(
+      (promotionOptions.value.find(
+        (promotion): promotion is PromotionWithReferentiels =>
+          promotion.id === selectedPromotionId.value,
+      ) as PromotionWithReferentiels | undefined) ??
+      (promotionOptions.value.find(
         (promotion): promotion is PromotionWithReferentiels =>
           promotion.estActive === true,
-      ) as PromotionWithReferentiels | undefined) ?? null
+      ) as PromotionWithReferentiels | undefined) ??
+      null
     const statsData = await getStatistiques({
-      promotionId: activePromo?.id,
+      promotionId: selectedPromotionId.value || activePromo?.id,
       includePromotions: false,
       includeReferentiels: true,
       includeSituationsRecentes: false,
@@ -115,8 +122,28 @@ async function loadStats() {
   }
 }
 
+async function handlePromotionChange() {
+  await loadStats()
+}
+
 onMounted(() => {
-  loadStats()
+  ;(async () => {
+    try {
+      const promotionsData = await getPromotions({ includeMetrics: false })
+      promotionOptions.value = promotionsData.items
+      activePromotion.value =
+        (promotionsData.items.find(
+          (promotion): promotion is PromotionWithReferentiels =>
+            promotion.estActive === true,
+        ) as PromotionWithReferentiels | undefined) ?? null
+      selectedPromotionId.value = activePromotion.value?.id ?? ''
+      await loadStats()
+    } catch (e: any) {
+      error.value = e.message || 'Erreur lors du chargement des statistiques'
+      console.error('Erreur statistiques:', e)
+      isLoading.value = false
+    }
+  })()
 })
 </script>
 
@@ -145,8 +172,23 @@ onMounted(() => {
                 <p class="text-lg font-bold">{{ activePromotion.nom }} ({{ activePromotion.annee }})</p>
               </div>
             </div>
-            <div class="text-sm text-slate-500">
-              Données filtrées automatiquement
+            <div class="flex items-center gap-3">
+              <select
+                v-model="selectedPromotionId"
+                class="rounded-xl border border-slate-200 bg-white py-2.5 pl-3 pr-8 text-sm text-slate-700 outline-none focus:border-orange-400 cursor-pointer"
+                @change="handlePromotionChange"
+              >
+                <option
+                  v-for="promotion in promotionOptions"
+                  :key="promotion.id"
+                  :value="promotion.id"
+                >
+                  {{ promotion.nom }} ({{ promotion.annee }})
+                </option>
+              </select>
+              <div class="text-sm text-slate-500">
+                Données filtrées par promotion
+              </div>
             </div>
           </div>
         </div>
