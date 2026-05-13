@@ -14,6 +14,7 @@ import PageLoadingState from '@/shared/components/PageLoadingState.vue';
 const route = useRoute();
 const router = useRouter();
 const activeTab = ref<"situations" | "documents" | "informations">("situations");
+const returnQuery = computed(() => route.query);
 
 // Data state
 const loading = ref(true);
@@ -133,7 +134,7 @@ async function loadApprenant() {
 }
 
 function goBack() {
-  router.push("/manager/apprenants");
+  router.push({ path: "/manager/apprenants", query: returnQuery.value });
 }
 
 onMounted(() => {

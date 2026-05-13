@@ -13,6 +13,7 @@ import { showToast } from "../../../core/ui/toast";
 import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
 const route = useRoute();
+const returnQuery = computed(() => route.query);
 const activeTab = ref<"situations" | "documents" | "informations">(
   "situations",
 );
@@ -193,7 +194,7 @@ onMounted(() => {
           <polyline points="9 18 15 12 9 6" />
         </svg>
         <RouterLink
-          to="/apprenants"
+          :to="{ path: '/apprenants', query: returnQuery }"
           class="hover:text-slate-700 transition-colors"
           >Apprenants</RouterLink
         >
