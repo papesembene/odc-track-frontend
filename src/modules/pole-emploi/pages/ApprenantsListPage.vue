@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import {
   exportApprenantsXlsx,
@@ -16,6 +16,9 @@ import {
   type StatistiquesGlobales,
 } from "../api/statistiques.api";
 import { showToast } from "../../../core/ui/toast";
+
+const route = useRoute();
+const router = useRouter();
 
 /**
  * Type pour une ligne du tableau
@@ -88,6 +91,19 @@ const resendingIds = ref<string[]>([]);
  */
 const currentPage = ref(1);
 const totalPages = ref(1);
+const searchQuery = ref(
+  typeof route.query.search === "string" ? route.query.search : "",
+);
+const filterPromo = ref(
+  typeof route.query.promotionId === "string" ? route.query.promotionId : "",
+);
+const filterRef = ref(
+  typeof route.query.referentielId === "string" ? route.query.referentielId : "",
+);
+const initialPage = Number(route.query.page ?? 1);
+
+currentPage.value =
+  Number.isFinite(initialPage) && initialPage > 0 ? initialPage : 1;
 
 /**
  * Charge les filtres (promotions et référentiels)
@@ -202,10 +218,6 @@ onMounted(() => {
   });
 });
 
-const searchQuery = ref("");
-const filterPromo = ref("");
-const filterRef = ref("");
-
 const filtered = computed(() => rows.value);
 const selectedPromotion = computed(() =>
   promotionsList.value.find((promotion) => promotion.id === filterPromo.value) ?? null,
@@ -213,9 +225,24 @@ const selectedPromotion = computed(() =>
 const isHistoricalPromotionSelected = computed(
   () => selectedPromotion.value?.statut === "HISTORIQUE",
 );
+const currentListQuery = computed(() => {
+  const query: Record<string, string> = {};
+
+  if (searchQuery.value) query.search = searchQuery.value;
+  if (filterPromo.value) query.promotionId = filterPromo.value;
+  if (filterRef.value) query.referentielId = filterRef.value;
+  if (currentPage.value > 1) query.page = String(currentPage.value);
+
+  return query;
+});
+
+function syncRouteQuery() {
+  router.replace({ query: currentListQuery.value });
+}
 
 watch([filterPromo, filterRef], () => {
   currentPage.value = 1;
+  syncRouteQuery();
   loadApprenants();
 });
 
@@ -233,8 +260,13 @@ watch(searchQuery, () => {
   }
 
   searchReloadTimer = setTimeout(() => {
+    syncRouteQuery();
     loadApprenants();
   }, 300);
+});
+
+watch(currentPage, () => {
+  syncRouteQuery();
 });
 
 onBeforeUnmount(() => {
@@ -725,7 +757,7 @@ async function resendCredentials(row: Row) {
                 <td class="px-5 py-4">
                   <div class="flex items-center gap-3">
                     <RouterLink
-                      :to="`/apprenants/${row.id}`"
+                      :to="{ path: `/apprenants/${row.id}`, query: currentListQuery }"
                       class="inline-flex items-center gap-1 text-sm font-semibold text-orange-500 transition-colors hover:text-orange-600"
                     >
                       Voir détails
@@ -746,7 +778,7 @@ async function resendCredentials(row: Row) {
                       type="button"
                       class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                       :disabled="resendingIds.includes(row.id)"
-                      @click.stop="resendCredentials(row)"
+                      @click.stop.prevent="resendCredentials(row)"
                     >
                       {{
                         resendingIds.includes(row.id)

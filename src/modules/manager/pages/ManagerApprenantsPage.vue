@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import {
   exportApprenantsXlsx,
@@ -15,6 +15,7 @@ import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 import { showToast } from '@/core/ui/toast'
 
 // Router instance
+const route = useRoute()
 const router = useRouter()
 
 type ApprenantStatus = 'En attente' | 'En cours' | 'Validée' | 'Rejetée'
@@ -45,10 +46,40 @@ let apprenantsReloadTimer: ReturnType<typeof setTimeout> | null = null
 // ── Filters (from active promotion) ──
 const refs = ref<{ id: string; nom: string }[]>([])
 
-const search = ref('')
-const refFil = ref('')
-const apprenantsPage = ref(1)
+const search = ref(
+  typeof route.query.search === 'string' ? route.query.search : '',
+)
+const refFil = ref(
+  typeof route.query.referentielId === 'string' ? route.query.referentielId : '',
+)
+const apprenantsPage = ref(
+  typeof route.query.page === 'string'
+    ? Math.max(1, Number.parseInt(route.query.page, 10) || 1)
+    : 1,
+)
 const apprenantsPerPage = 12
+
+const currentListQuery = computed(() => {
+  const query: Record<string, string> = {}
+
+  if (search.value.trim()) {
+    query.search = search.value.trim()
+  }
+
+  if (refFil.value) {
+    query.referentielId = refFil.value
+  }
+
+  if (apprenantsPage.value > 1) {
+    query.page = String(apprenantsPage.value)
+  }
+
+  return query
+})
+
+function syncRouteQuery() {
+  void router.replace({ query: currentListQuery.value })
+}
 
 function goToApprenantsPage(page: number) {
   if (page < 1 || page > totalApprenantPages.value) {
@@ -144,6 +175,7 @@ const totalApprenantPages = computed(() =>
 
 watch(refFil, () => {
   apprenantsPage.value = 1
+  syncRouteQuery()
   loadApprenants()
 })
 
@@ -155,11 +187,13 @@ watch(search, () => {
   }
 
   apprenantsReloadTimer = setTimeout(() => {
+    syncRouteQuery()
     loadApprenants()
   }, 300)
 })
 
 watch(apprenantsPage, () => {
+  syncRouteQuery()
   loadApprenants()
 })
 
@@ -328,7 +362,12 @@ async function downloadExport() {
             v-for="a in paginatedApprenants"
             :key="a.id"
             class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-            @click="router.push('/manager/apprenants/' + a.id)"
+            @click="
+              router.push({
+                path: '/manager/apprenants/' + a.id,
+                query: currentListQuery,
+              })
+            "
           >
             <!-- Avatar + nom + email -->
             <div class="flex items-center gap-4">
