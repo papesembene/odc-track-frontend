@@ -36,10 +36,13 @@ async function loadFilters() {
       getPromotions({ includeMetrics: false }),
       getReferentiels(),
     ]);
-    promotionsList.value = promData;
-    referentielsList.value = refData;
+    const promotions = Array.isArray(promData) ? promData : [];
+    const referentiels = Array.isArray(refData) ? refData : [];
+
+    promotionsList.value = promotions;
+    referentielsList.value = referentiels;
     activePromotion.value =
-      promData.find((promotion) => promotion.estActive) ?? null;
+      promotions.find((promotion) => promotion.estActive) ?? null;
 
     if (!filterPromotion.value && activePromotion.value?.id) {
       filterPromotion.value = activePromotion.value.id;

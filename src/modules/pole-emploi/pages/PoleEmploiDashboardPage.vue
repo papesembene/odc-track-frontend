@@ -87,10 +87,11 @@ const statusColor = (valide: boolean) =>
 onMounted(async () => {
   try {
     const allPromotions = await getPromotions({ includeMetrics: false });
+    const safePromotions = Array.isArray(allPromotions) ? allPromotions : [];
 
-    promotions.value = allPromotions;
+    promotions.value = safePromotions;
     activePromotion.value =
-      allPromotions.find((promotion) => promotion.estActive) ?? null;
+      safePromotions.find((promotion) => promotion.estActive) ?? null;
     selectedPromotionId.value = activePromotion.value?.id || "";
 
     await loadStats();

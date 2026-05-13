@@ -114,10 +114,13 @@ async function loadFilters() {
       getPromotions({ includeMetrics: false }),
       getReferentiels(),
     ]);
-    promotionsList.value = promos;
-    referentielsList.value = refs;
+    const safePromotions = Array.isArray(promos) ? promos : [];
+    const safeReferentiels = Array.isArray(refs) ? refs : [];
+
+    promotionsList.value = safePromotions;
+    referentielsList.value = safeReferentiels;
     activePromotion.value =
-      promos.find((promotion) => promotion.estActive) ?? null;
+      safePromotions.find((promotion) => promotion.estActive) ?? null;
 
     // Le pôle emploi démarre sur la promotion active pour coller au flux métier
     // courant, tout en gardant la possibilité de changer le filtre ensuite.
