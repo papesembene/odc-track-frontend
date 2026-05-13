@@ -14,6 +14,7 @@ import PageLoadingState from '@/shared/components/PageLoadingState.vue';
 const route = useRoute();
 const router = useRouter();
 const activeTab = ref<"situations" | "documents" | "informations">("situations");
+const returnQuery = computed(() => route.query);
 
 // Data state
 const loading = ref(true);
@@ -92,10 +93,13 @@ const totalDocumentItems = computed(
 
 // Charge les documents depuis l'API
 async function loadDocuments() {
-  if (!apprenantData.value?.id) return;
+  if (!apprenantData.value?.localId) {
+    documents.value = [];
+    return;
+  }
   documentsLoading.value = true;
   try {
-    documents.value = await getDocumentsByApprenant(apprenantData.value.id);
+    documents.value = await getDocumentsByApprenant(apprenantData.value.localId);
   } catch (error) {
     console.error("Erreur chargement documents:", error);
   } finally {
@@ -130,7 +134,7 @@ async function loadApprenant() {
 }
 
 function goBack() {
-  router.push("/manager/apprenants");
+  router.push({ path: "/manager/apprenants", query: returnQuery.value });
 }
 
 onMounted(() => {

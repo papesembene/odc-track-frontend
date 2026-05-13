@@ -2,28 +2,35 @@
 import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
-import { getActivePromotion, type PromotionItem } from '@/modules/manager/api/promotions.api'
+import { getPromotions, type PromotionItem } from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
 import EmptyState from '@/shared/components/EmptyState.vue'
 
 // ── Data from API ──
 const statsData = ref<StatistiquesGlobales | null>(null)
 const activePromotion = ref<PromotionItem | null>(null)
+const promotionOptions = ref<PromotionItem[]>([])
+const selectedPromotionId = ref('')
 const loading = ref(true)
 const hasLoaded = ref(false)
 const error = ref<string | null>(null)
 
-// ── Fetch data on mount ──
-onMounted(async () => {
+async function loadDashboard() {
+  loading.value = true
+  error.value = null
+
   try {
-    const [stats, activePromo] = await Promise.all([
-      getStatistiques({
-        includePromotions: true,
-        includeReferentiels: false,
-        includeSituationsRecentes: true,
-      }),
-      getActivePromotion()
-    ])
+    const activePromo =
+      activePromotion.value ??
+      promotionOptions.value.find((promotion) => promotion.estActive) ??
+      null
+    const stats = await getStatistiques({
+      promotionId: selectedPromotionId.value || activePromo?.id || undefined,
+      includePromotions: true,
+      includeReferentiels: false,
+      includeSituationsRecentes: true,
+    })
+
     statsData.value = stats
     activePromotion.value = activePromo
     hasLoaded.value = true
@@ -31,6 +38,28 @@ onMounted(async () => {
     error.value = e.message || 'Erreur lors du chargement des données'
     console.error('Erreur:', e)
   } finally {
+    loading.value = false
+  }
+}
+
+async function handlePromotionChange() {
+  await loadDashboard()
+}
+
+// ── Fetch data on mount ──
+onMounted(async () => {
+  try {
+    const allPromotions = await getPromotions({ includeMetrics: false })
+
+    promotionOptions.value = allPromotions.items
+    activePromotion.value =
+      allPromotions.items.find((promotion) => promotion.estActive) ?? null
+    selectedPromotionId.value = activePromotion.value?.id || ''
+
+    await loadDashboard()
+  } catch (e: any) {
+    error.value = e.message || 'Erreur lors du chargement des données'
+    console.error('Erreur:', e)
     loading.value = false
   }
 })
@@ -209,22 +238,26 @@ function formatTimeAgo(dateStr: string): string {
 
 // ── Computed promotions from data ──
 const promotions = computed(() => {
-  if (!statsData.value?.parPromotion) return []
-  
-  return statsData.value.parPromotion.map(p => {
-    const taux = p.total > 0 ? Math.round((p.enEmploi / p.total) * 100) : 0
-    const isActivePromotion = activePromotion.value?.id === p.promotionId
+  if (promotionOptions.value.length === 0) return []
+
+  return promotionOptions.value.map((promotion) => {
+    const taux = Math.round(promotion.tauxInsertion ?? 0)
+    const apprenants = promotion.totalApprenants ?? 0
+    const isActivePromotion = activePromotion.value?.id === promotion.id
+    const isSelectedPromotion = selectedPromotionId.value === promotion.id
     const statusClass = isActivePromotion
       ? 'border-slate-300 text-slate-700 bg-slate-100'
-      : 'border-slate-200 text-slate-500 bg-slate-50'
+      : isSelectedPromotion
+        ? 'border-orange-200 text-orange-700 bg-orange-50'
+        : 'border-slate-200 text-slate-500 bg-slate-50'
     
     return {
-      name: p.promotionNom,
-      status: isActivePromotion ? 'Active' : 'Suivi',
+      name: promotion.nom,
+      status: isActivePromotion ? 'Active' : isSelectedPromotion ? 'Consultée' : 'Suivi',
       statusClass,
-      apprenants: p.total,
+      apprenants,
       taux,
-      hasTaux: p.total > 0,
+      hasTaux: apprenants > 0,
     }
   })
 })
@@ -263,6 +296,24 @@ const promotions = computed(() => {
             <div class="text-sm text-slate-500">
               Données filtrées automatiquement
             </div>
+          </div>
+          <div class="mt-4 flex flex-col gap-2 sm:max-w-xs">
+            <label class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Promotion
+            </label>
+            <select
+              v-model="selectedPromotionId"
+              class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-orange-400"
+              @change="handlePromotionChange"
+            >
+              <option
+                v-for="promotion in promotionOptions"
+                :key="promotion.id"
+                :value="promotion.id"
+              >
+                {{ promotion.nom }} ({{ promotion.annee }})
+              </option>
+            </select>
           </div>
         </div>
 

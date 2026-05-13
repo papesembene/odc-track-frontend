@@ -47,8 +47,8 @@ export async function getReferentiels(
   if (query?.sortBy) params.append('sortBy', query.sortBy)
   if (query?.sortOrder) params.append('sortOrder', query.sortOrder)
 
-  const suffix = params.toString() ? `?${params.toString()}` : ''
-  const res = await api.get(`/referentiels${suffix}`)
+   const suffix = params.toString() ? `?${params.toString()}` : ''
+   const res = await api.get(`/referentiels/master-data${suffix}`)
 
   return {
     items: extractApiItems<ReferentielItem>(res),

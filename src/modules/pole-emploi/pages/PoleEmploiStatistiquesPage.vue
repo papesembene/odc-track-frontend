@@ -5,7 +5,7 @@ import {
   getStatistiques,
   type StatistiquesGlobales,
 } from "../api/statistiques.api";
-import { getActivePromotion, getPromotions } from "../api/situations.api";
+import { getPromotions } from "../api/situations.api";
 import { showToast } from "../../../core/ui/toast";
 import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
@@ -15,7 +15,17 @@ type Segment = { label: string; value: number; color: string; bg: string };
 const stats = ref<StatistiquesGlobales | null>(null);
 const isLoading = ref(true);
 const hasLoaded = ref(false);
-const promotionsList = ref<Array<{ id: string; nom: string; annee?: number }>>([]);
+const promotionsList = ref<
+  Array<{
+    id: string;
+    nom: string;
+    annee?: number;
+    estActive?: boolean;
+    totalApprenants?: number;
+    enEmploi?: number;
+    tauxInsertion?: number;
+  }>
+>([]);
 const selectedPromotionId = ref("");
 const activePromotion = ref<{ id: string; nom: string; annee?: number } | null>(
   null,
@@ -55,11 +65,13 @@ const statutSegments = computed<Segment[]>(() => {
 
 // Computed pour les données des promotions (depuis l'API)
 const promotions = computed(() => {
-  if (!stats.value?.parPromotion) return [];
-  return stats.value.parPromotion.map((p) => ({
-    label: p.promotionNom,
-    value: p.enEmploi,
-    total: p.total,
+  return promotionsList.value.map((promotion) => ({
+    id: promotion.id,
+    label: promotion.nom,
+    value: promotion.enEmploi ?? 0,
+    total: promotion.totalApprenants ?? 0,
+    isActive: promotion.id === activePromotion.value?.id,
+    isSelected: promotion.id === selectedPromotionId.value,
   }));
 });
 
@@ -112,11 +124,12 @@ async function loadStats() {
 }
 
 onMounted(() => {
-  Promise.all([getActivePromotion(), getPromotions()])
-    .then(([promotion, promotions]) => {
-      activePromotion.value = promotion;
+  getPromotions({ includeMetrics: false })
+    .then((promotions) => {
       promotionsList.value = promotions;
-      selectedPromotionId.value = promotion?.id ?? "";
+      activePromotion.value =
+        promotions.find((promotion) => promotion.estActive) ?? null;
+      selectedPromotionId.value = activePromotion.value?.id ?? "";
     })
     .catch(() => {
       activePromotion.value = null;

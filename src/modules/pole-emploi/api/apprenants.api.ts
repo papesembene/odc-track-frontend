@@ -68,7 +68,7 @@ export async function getApprenants(
   if (query?.referentielId) params.append("referentielId", query.referentielId);
 
   const queryString = params.toString();
-  const url = queryString ? `/apprenants?${queryString}` : "/apprenants";
+  const url = queryString ? `/apprenants/master-data?${queryString}` : "/apprenants/master-data";
 
   const res = await api.get(url);
   const items = extractItems<ApprenantListItem>(res);
@@ -106,6 +106,7 @@ export type SituationItem = {
  */
 export type ApprenantDetail = {
   id: string;
+  localId?: string | null;
   telephone: string | null;
   user: {
     id: string;
@@ -141,7 +142,7 @@ export type ApprenantDetail = {
 export async function getApprenantById(
   id: string,
 ): Promise<ApprenantDetail | null> {
-  const res = await api.get(`/apprenants/${id}`);
+  const res = await api.get(`/apprenants/master-data/${id}`);
   return res?.data?.data || null;
 }
 
@@ -160,4 +161,14 @@ export async function exportApprenantsXlsx(
 
   const res = await api.get(url, { responseType: "blob" });
   return res.data as Blob;
+}
+
+export async function resendHistoricalCredentials(id: string): Promise<{
+  apprenantId: string;
+  email: string;
+  promotion: string;
+  message: string;
+} | null> {
+  const res = await api.post(`/apprenants/${id}/resend-historical-credentials`);
+  return res?.data?.data || null;
 }

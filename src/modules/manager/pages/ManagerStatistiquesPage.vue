@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import ManagerLayout from '@/modules/manager/layouts/ManagerLayout.vue'
 import { getStatistiques, type StatistiquesGlobales } from '@/modules/manager/api/statistiques.api'
 import {
-  getActivePromotion,
+  getPromotions,
   type PromotionWithReferentiels,
 } from '@/modules/manager/api/promotions.api'
 import PageLoadingState from '@/shared/components/PageLoadingState.vue'
@@ -90,14 +90,18 @@ async function loadStats() {
   isLoading.value = true
   error.value = null
   try {
-    const [statsData, activePromo] = await Promise.all([
-      getStatistiques({
-        includePromotions: false,
-        includeReferentiels: true,
-        includeSituationsRecentes: false,
-      }),
-      getActivePromotion()
-    ])
+    const promotionsData = await getPromotions({ includeMetrics: false })
+    const activePromo =
+      (promotionsData.items.find(
+        (promotion): promotion is PromotionWithReferentiels =>
+          promotion.estActive === true,
+      ) as PromotionWithReferentiels | undefined) ?? null
+    const statsData = await getStatistiques({
+      promotionId: activePromo?.id,
+      includePromotions: false,
+      includeReferentiels: true,
+      includeSituationsRecentes: false,
+    })
     
     stats.value =
       statsData && typeof statsData === 'object' ? statsData : null

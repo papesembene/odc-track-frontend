@@ -13,6 +13,7 @@ import { showToast } from "../../../core/ui/toast";
 import PageLoadingState from "@/shared/components/PageLoadingState.vue";
 
 const route = useRoute();
+const returnQuery = computed(() => route.query);
 const activeTab = ref<"situations" | "documents" | "informations">(
   "situations",
 );
@@ -99,10 +100,13 @@ const cvDocument = computed(() => apprenantData.value?.cvDocument ?? null);
  * Charge les documents depuis l'API
  */
 async function loadDocuments() {
-  if (!apprenantData.value?.id) return;
+  if (!apprenantData.value?.localId) {
+    documents.value = [];
+    return;
+  }
   documentsLoading.value = true;
   try {
-    documents.value = await getDocumentsByApprenant(apprenantData.value.id);
+    documents.value = await getDocumentsByApprenant(apprenantData.value.localId);
   } catch (error) {
     console.error("Erreur chargement documents:", error);
   } finally {
@@ -190,7 +194,7 @@ onMounted(() => {
           <polyline points="9 18 15 12 9 6" />
         </svg>
         <RouterLink
-          to="/apprenants"
+          :to="{ path: '/apprenants', query: returnQuery }"
           class="hover:text-slate-700 transition-colors"
           >Apprenants</RouterLink
         >

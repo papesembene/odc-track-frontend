@@ -10,9 +10,9 @@ const ValidationsPage = () => import('@/modules/pole-emploi/pages/ValidationsPag
 const ApprenantsListPage = () => import('@/modules/pole-emploi/pages/ApprenantsListPage.vue')
 const ApprenantDetailPage = () => import('@/modules/pole-emploi/pages/ApprenantDetailPage.vue')
 const PoleEmploiStatistiquesPage = () => import('@/modules/pole-emploi/pages/PoleEmploiStatistiquesPage.vue')
+const ImportApprenantsPage = () => import('@/modules/pole-emploi/pages/ImportApprenantsPage.vue')
 const PlaceholderBackofficePage = () => import('@/modules/pole-emploi/pages/PlaceholderBackofficePage.vue')
 const EntreprisesPage = () => import('@/modules/pole-emploi/pages/EntreprisesPage.vue')
-const ImportApprenantsPage = () => import('@/modules/pole-emploi/pages/ImportApprenantsPage.vue')
 const ApprenantDashboardPage = () => import('@/modules/apprenant/pages/ApprenantDashboardPage.vue')
 const ApprenantSituationsPage = () => import('@/modules/apprenant/pages/ApprenantSituationsPage.vue')
 const ApprenantNewSituationPage = () => import('@/modules/apprenant/pages/ApprenantNewSituationPage.vue')
@@ -42,9 +42,10 @@ const router = createRouter({
     { path: '/validations', name: 'validations', component: ValidationsPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
     { path: '/apprenants', name: 'apprenants', component: ApprenantsListPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
     { path: '/apprenants/:id', name: 'apprenant-detail', component: ApprenantDetailPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/import-historique', name: 'import-historique', component: ImportApprenantsPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN', 'MANAGER'] } },
     { path: '/statistiques', name: 'statistiques', component: PoleEmploiStatistiquesPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
     { path: '/entreprises', name: 'entreprises', component: EntreprisesPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
-    { path: '/import-apprenants', name: 'import-apprenants', component: ImportApprenantsPage, meta: { roles: ['POLE_EMPLOI', 'ADMIN'] } },
+    { path: '/import-apprenants', redirect: '/import-historique' },
     {
       path: '/parametres',
       name: 'parametres',

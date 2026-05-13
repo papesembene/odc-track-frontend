@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import { RouterLink } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import {
   exportApprenantsXlsx,
   getApprenants,
+  resendHistoricalCredentials,
 } from "../api/apprenants.api";
 import {
-  getActivePromotion,
   getPromotions,
   getReferentiels,
 } from "../api/situations.api";
@@ -16,6 +16,9 @@ import {
   type StatistiquesGlobales,
 } from "../api/statistiques.api";
 import { showToast } from "../../../core/ui/toast";
+
+const route = useRoute();
+const router = useRouter();
 
 /**
  * Type pour une ligne du tableau
@@ -43,6 +46,7 @@ type PromotionOption = {
   id: string;
   nom: string;
   annee?: number;
+  statut?: string;
 };
 
 /**
@@ -80,31 +84,45 @@ const activePromotion = ref<PromotionOption | null>(null);
  */
 const isLoading = ref(true);
 const exportLoading = ref(false);
+const resendingIds = ref<string[]>([]);
 
 /**
  * Pagination
  */
 const currentPage = ref(1);
 const totalPages = ref(1);
+const searchQuery = ref(
+  typeof route.query.search === "string" ? route.query.search : "",
+);
+const filterPromo = ref(
+  typeof route.query.promotionId === "string" ? route.query.promotionId : "",
+);
+const filterRef = ref(
+  typeof route.query.referentielId === "string" ? route.query.referentielId : "",
+);
+const initialPage = Number(route.query.page ?? 1);
+
+currentPage.value =
+  Number.isFinite(initialPage) && initialPage > 0 ? initialPage : 1;
 
 /**
  * Charge les filtres (promotions et référentiels)
  */
 async function loadFilters() {
   try {
-    const [promos, refs, activePromo] = await Promise.all([
-      getPromotions(),
+    const [promos, refs] = await Promise.all([
+      getPromotions({ includeMetrics: false }),
       getReferentiels(),
-      getActivePromotion(),
     ]);
     promotionsList.value = promos;
     referentielsList.value = refs;
-    activePromotion.value = activePromo;
+    activePromotion.value =
+      promos.find((promotion) => promotion.estActive) ?? null;
 
     // Le pôle emploi démarre sur la promotion active pour coller au flux métier
     // courant, tout en gardant la possibilité de changer le filtre ensuite.
-    if (!filterPromo.value && activePromo?.id) {
-      filterPromo.value = activePromo.id;
+    if (!filterPromo.value && activePromotion.value?.id) {
+      filterPromo.value = activePromotion.value.id;
     }
   } catch (error) {
     console.error("Erreur chargement filtres:", error);
@@ -193,21 +211,36 @@ async function loadGlobalStats() {
 // Chargement au montage
 onMounted(() => {
   loadFilters().then(() => {
-    if (!filterPromo.value) {
-      loadApprenants();
-      loadGlobalStats();
-    }
+    loadApprenants();
+    loadGlobalStats();
   });
 });
 
-const searchQuery = ref("");
-const filterPromo = ref("");
-const filterRef = ref("");
-
 const filtered = computed(() => rows.value);
+const selectedPromotion = computed(() =>
+  promotionsList.value.find((promotion) => promotion.id === filterPromo.value) ?? null,
+);
+const isHistoricalPromotionSelected = computed(
+  () => selectedPromotion.value?.statut === "HISTORIQUE",
+);
+const currentListQuery = computed(() => {
+  const query: Record<string, string> = {};
+
+  if (searchQuery.value) query.search = searchQuery.value;
+  if (filterPromo.value) query.promotionId = filterPromo.value;
+  if (filterRef.value) query.referentielId = filterRef.value;
+  if (currentPage.value > 1) query.page = String(currentPage.value);
+
+  return query;
+});
+
+function syncRouteQuery() {
+  router.replace({ query: currentListQuery.value });
+}
 
 watch([filterPromo, filterRef], () => {
   currentPage.value = 1;
+  syncRouteQuery();
   loadApprenants();
 });
 
@@ -225,8 +258,13 @@ watch(searchQuery, () => {
   }
 
   searchReloadTimer = setTimeout(() => {
+    syncRouteQuery();
     loadApprenants();
   }, 300);
+});
+
+watch(currentPage, () => {
+  syncRouteQuery();
 });
 
 onBeforeUnmount(() => {
@@ -269,6 +307,30 @@ async function downloadExport() {
     );
   } finally {
     exportLoading.value = false;
+  }
+}
+
+async function resendCredentials(row: Row) {
+  if (resendingIds.value.includes(row.id)) {
+    return;
+  }
+
+  resendingIds.value = [...resendingIds.value, row.id];
+
+  try {
+    const result = await resendHistoricalCredentials(row.id);
+    showToast(
+      result?.message ||
+        `Identifiants renvoyés à ${row.email}`,
+      "success",
+    );
+  } catch (error: any) {
+    showToast(
+      error?.response?.data?.message || "Erreur lors du renvoi des identifiants",
+      "error",
+    );
+  } finally {
+    resendingIds.value = resendingIds.value.filter((id) => id !== row.id);
   }
 }
 </script>
@@ -691,23 +753,38 @@ async function downloadExport() {
                   </span>
                 </td>
                 <td class="px-5 py-4">
-                  <RouterLink
-                    :to="`/apprenants/${row.id}`"
-                    class="inline-flex items-center gap-1 text-sm font-semibold text-orange-500 transition-colors hover:text-orange-600"
-                  >
-                    Voir détails
-                    <svg
-                      class="h-3.5 w-3.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
+                  <div class="flex items-center gap-3">
+                    <RouterLink
+                      :to="{ path: `/apprenants/${row.id}`, query: currentListQuery }"
+                      class="inline-flex items-center gap-1 text-sm font-semibold text-orange-500 transition-colors hover:text-orange-600"
                     >
-                      <polyline points="9 18 15 12 9 6" />
-                    </svg>
-                  </RouterLink>
+                      Voir détails
+                      <svg
+                        class="h-3.5 w-3.5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </RouterLink>
+                    <button
+                      v-if="isHistoricalPromotionSelected"
+                      type="button"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                      :disabled="resendingIds.includes(row.id)"
+                      @click.stop.prevent="resendCredentials(row)"
+                    >
+                      {{
+                        resendingIds.includes(row.id)
+                          ? "Envoi..."
+                          : "Renvoyer les identifiants"
+                      }}
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>

@@ -2,6 +2,7 @@
  * API pour les promotions et référentiels (Manager)
  */
 import { api } from "@/core/api/axios";
+import { getCachedMasterData } from "@/core/api/master-data-cache";
 import {
   extractApiData,
   extractApiItems,
@@ -20,6 +21,9 @@ export type PromotionItem = {
   nom: string;
   annee: number;
   estActive?: boolean;
+  totalApprenants?: number;
+  enEmploi?: number;
+  tauxInsertion?: number;
   createdAt?: string;
   updatedAt?: string;
   referentiels?: Array<{
@@ -49,6 +53,10 @@ export type PromotionsPagination = {
   };
 };
 
+export type PromotionsMasterDataOptions = {
+  includeMetrics?: boolean;
+};
+
 export interface PromotionInput {
   nom: string;
   annee: number;
@@ -64,12 +72,24 @@ export interface PromotionInput {
  *
  * @returns Promesse avec la liste des promotions
  */
-export async function getPromotions(): Promise<PromotionsPagination> {
-  const res = await api.get("/promotions");
-  return {
-    items: extractApiItems<PromotionItem>(res),
-    pagination: extractApiPagination(res),
-  };
+export async function getPromotions(
+  options: PromotionsMasterDataOptions = {},
+): Promise<PromotionsPagination> {
+  return getCachedMasterData(
+    `master-data:promotions:${options.includeMetrics === false ? "light" : "full"}`,
+    async () => {
+      const res = await api.get("/promotions/master-data", {
+        params: {
+          includeMetrics: options.includeMetrics !== false,
+        },
+      });
+      return {
+        items: extractApiItems<PromotionItem>(res),
+        pagination: extractApiPagination(res),
+      };
+    },
+    { ttlMs: 5 * 60 * 1000, staleTtlMs: 30 * 60 * 1000 },
+  );
 }
 
 /**
@@ -78,8 +98,14 @@ export async function getPromotions(): Promise<PromotionsPagination> {
  * @returns Promesse avec la liste des référentiels
  */
 export async function getReferentiels(): Promise<ReferentielItem[]> {
-  const res = await api.get("/referentiels");
-  return extractApiItems<ReferentielItem>(res);
+  return getCachedMasterData(
+    "master-data:referentiels",
+    async () => {
+      const res = await api.get("/referentiels/master-data");
+      return extractApiItems<ReferentielItem>(res);
+    },
+    { ttlMs: 5 * 60 * 1000, staleTtlMs: 30 * 60 * 1000 },
+  );
 }
 
 /**
@@ -99,8 +125,14 @@ export async function activatePromotion(id: string): Promise<PromotionItem> {
  * @returns Promesse avec la promotion active ou null
  */
 export async function getActivePromotion(): Promise<PromotionWithReferentiels | null> {
-  const res = await api.get("/promotions/active");
-  return extractApiData<PromotionWithReferentiels | null>(res);
+  return getCachedMasterData(
+    "master-data:active-promotion",
+    async () => {
+      const res = await api.get("/promotions/master-data/active");
+      return extractApiData<PromotionWithReferentiels | null>(res);
+    },
+    { ttlMs: 5 * 60 * 1000, staleTtlMs: 30 * 60 * 1000 },
+  );
 }
 
 export async function createPromotion(
