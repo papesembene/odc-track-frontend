@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { tokenStorage } from './token-storage'
+import { sessionStorage } from './session-storage'
 import { api } from '../api/axios'
 
 type JwtPayload = {
@@ -52,12 +53,17 @@ const parseJwt = (token: string): JwtPayload | null => {
 }
 
 const applyJwtPayload = (payload: JwtPayload | null) => {
+  const storedUser = sessionStorage.getCurrentUser()
+  const fullName = storedUser?.fullName?.trim() ?? ''
+  const [storedPrenom, ...storedNomParts] = fullName ? fullName.split(/\s+/) : []
+  const storedNom = storedNomParts.join(' ').trim()
+
   currentUser.value = {
     id: payload?.sub ?? null,
     email: payload?.email ?? null,
-    role: payload?.role ?? null,
-    nom: payload?.nom ?? null,
-    prenom: payload?.prenom ?? null,
+    role: payload?.role ?? storedUser?.role ?? null,
+    nom: payload?.nom ?? (storedNom || null),
+    prenom: payload?.prenom ?? (storedPrenom || null),
     updatedAt: null,
     passwordChangedAt: null,
 
