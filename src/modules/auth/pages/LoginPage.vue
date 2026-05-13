@@ -2,6 +2,7 @@
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { api } from "../../../core/api/axios";
+import { clearAuthenticatedSession } from "../../../core/auth/auth-session";
 import { persistAuthenticatedSession } from "../../../core/auth/auth-session";
 import { getDefaultPathByRole } from "../../../core/auth/role-redirect";
 import { showToast } from "../../../core/ui/toast";
@@ -59,8 +60,10 @@ const onSubmit = async () => {
     return;
   }
   try {
+    clearAuthenticatedSession();
+    const normalizedEmail = form.email.trim().toLowerCase();
     const { data } = await api.post("auth/login", {
-      email: form.email,
+      email: normalizedEmail,
       password: form.password,
     });
 
