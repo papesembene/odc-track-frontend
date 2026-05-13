@@ -3,7 +3,6 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import BackofficeLayout from "@/shared/layouts/BackofficeLayout.vue";
 import {
-  exportApprenantsXlsx,
   getApprenants,
   resendHistoricalCredentials,
 } from "../api/apprenants.api";
@@ -83,7 +82,6 @@ const activePromotion = ref<PromotionOption | null>(null);
  * Indicateur de chargement
  */
 const isLoading = ref(true);
-const exportLoading = ref(false);
 const resendingIds = ref<string[]>([]);
 
 /**
@@ -283,33 +281,6 @@ function goToPage(page: number) {
   if (page >= 1 && page <= totalPages.value) {
     currentPage.value = page;
     loadApprenants();
-  }
-}
-
-async function downloadExport() {
-  exportLoading.value = true;
-  try {
-    const blob = await exportApprenantsXlsx({
-      search: searchQuery.value || undefined,
-      promotionId: filterPromo.value || undefined,
-      referentielId: filterRef.value || undefined,
-    });
-
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `apprenants-pole-emploi-${new Date().toISOString().slice(0, 10)}.xlsx`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error: any) {
-    showToast(
-      error?.response?.data?.message || "Erreur lors de l'export des apprenants",
-      "error",
-    );
-  } finally {
-    exportLoading.value = false;
   }
 }
 
@@ -622,25 +593,6 @@ async function resendCredentials(row: Row) {
             </svg>
           </div>
 
-          <button
-            type="button"
-            class="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-            :disabled="exportLoading"
-            @click="downloadExport"
-          >
-            <svg
-              class="h-4 w-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            {{ exportLoading ? "Export..." : "Exporter en XLSX" }}
-          </button>
         </div>
 
         <!-- Table count -->
