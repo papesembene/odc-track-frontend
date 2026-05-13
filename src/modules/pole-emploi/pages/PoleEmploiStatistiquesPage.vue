@@ -126,9 +126,10 @@ async function loadStats() {
 onMounted(() => {
   getPromotions({ includeMetrics: false })
     .then((promotions) => {
-      promotionsList.value = promotions;
+      const safePromotions = Array.isArray(promotions) ? promotions : [];
+      promotionsList.value = safePromotions;
       activePromotion.value =
-        promotions.find((promotion) => promotion.estActive) ?? null;
+        safePromotions.find((promotion) => promotion.estActive) ?? null;
       selectedPromotionId.value = activePromotion.value?.id ?? "";
     })
     .catch(() => {
