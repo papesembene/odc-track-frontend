@@ -111,7 +111,7 @@ currentPage.value =
 async function loadFilters() {
   try {
     const [promos, refs] = await Promise.all([
-      getPromotions(),
+      getPromotions({ includeMetrics: false }),
       getReferentiels(),
     ]);
     promotionsList.value = promos;

@@ -1,4 +1,5 @@
 import { api } from "../../../core/api/axios";
+import { getCachedMasterData } from "@/core/api/master-data-cache";
 import { extractItems } from "./helpers";
 
 type PromotionOption = {
@@ -11,6 +12,10 @@ type PromotionOption = {
   totalApprenants?: number;
   enEmploi?: number;
   tauxInsertion?: number;
+};
+
+type PromotionsMasterDataOptions = {
+  includeMetrics?: boolean;
 };
 
 type ReferentielOption = {
@@ -63,9 +68,21 @@ export async function getSituationsEnAttente(
  * Récupère la liste de toutes les promotions.
  * @returns Tableau de promotions
  */
-export async function getPromotions(): Promise<PromotionOption[]> {
-  const res = await api.get("/promotions/master-data");
-  return extractItems<PromotionOption>(res);
+export async function getPromotions(
+  options: PromotionsMasterDataOptions = {},
+): Promise<PromotionOption[]> {
+  return getCachedMasterData(
+    `master-data:promotions:${options.includeMetrics === false ? "light" : "full"}`,
+    async () => {
+      const res = await api.get("/promotions/master-data", {
+        params: {
+          includeMetrics: options.includeMetrics !== false,
+        },
+      });
+      return extractItems<PromotionOption>(res);
+    },
+    { ttlMs: 5 * 60 * 1000, staleTtlMs: 30 * 60 * 1000 },
+  );
 }
 
 /**
@@ -74,8 +91,14 @@ export async function getPromotions(): Promise<PromotionOption[]> {
  * la consultation d'une autre promotion.
  */
 export async function getActivePromotion(): Promise<PromotionOption | null> {
-  const res = await api.get("/promotions/master-data/active");
-  return res?.data?.data || null;
+  return getCachedMasterData(
+    "master-data:active-promotion",
+    async () => {
+      const res = await api.get("/promotions/master-data/active");
+      return res?.data?.data || null;
+    },
+    { ttlMs: 5 * 60 * 1000, staleTtlMs: 30 * 60 * 1000 },
+  );
 }
 
 /**
@@ -83,8 +106,14 @@ export async function getActivePromotion(): Promise<PromotionOption | null> {
  * @returns Tableau de référentiels
  */
 export async function getReferentiels(): Promise<ReferentielOption[]> {
-  const res = await api.get("/referentiels/master-data");
-  return extractItems<ReferentielOption>(res);
+  return getCachedMasterData(
+    "master-data:referentiels",
+    async () => {
+      const res = await api.get("/referentiels/master-data");
+      return extractItems<ReferentielOption>(res);
+    },
+    { ttlMs: 5 * 60 * 1000, staleTtlMs: 30 * 60 * 1000 },
+  );
 }
 
 /**

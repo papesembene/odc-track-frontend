@@ -90,7 +90,7 @@ async function loadStats() {
   isLoading.value = true
   error.value = null
   try {
-    const promotionsData = await getPromotions()
+    const promotionsData = await getPromotions({ includeMetrics: false })
     const activePromo =
       (promotionsData.items.find(
         (promotion): promotion is PromotionWithReferentiels =>
